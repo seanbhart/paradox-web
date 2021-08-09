@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "target": "paradox-db5f7",
+    "public": "build",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

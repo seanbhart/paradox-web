@@ -1,5 +1,20 @@
+#root {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+#root::-webkit-scrollbar {
+  display: none;
+}
+
 .App {
   text-align: center;
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.App::-webkit-scrollbar {
+  display: none;
 }
 
 .App-logo {
@@ -14,14 +29,12 @@
 }
 
 .App-header {
-  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
 }
 
 .App-link {
@@ -35,4 +48,8 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.MuiTableRow-root:hover {
+  cursor: pointer !important;
 }

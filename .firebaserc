@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "paradox-db5f7"
+  },
+  "targets": {
+    "paradox-db5f7": {
+      "hosting": {
+        "paradox-db5f7": [
+          "paradox-db5f7"
+        ]
+      }
+    }
+  }
+}
