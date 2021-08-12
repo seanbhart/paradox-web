@@ -1,0 +1,23 @@
+#connect {
+  cursor: pointer;
+  width: 150px;
+  height: 40px;
+  border-radius: 20px;
+  line-height: 40px;
+  font-size: 12px;
+  font-family: "Ubuntu";
+  overflow: hidden;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#network-name {
+  width: 100px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 20px;
+  font-family: "Ubuntu";
+  overflow: hidden;
+  padding-left: 10px;
+  padding-right: 10px;
+}

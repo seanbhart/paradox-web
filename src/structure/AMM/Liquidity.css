@@ -1,0 +1,32 @@
+.liquidity {
+  width: 300px;
+  margin-bottom: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 12px;
+  font-family: "Ubuntu";
+  text-align: left;
+}
+
+#token-menus {
+  margin-left: 4px;
+}
+
+.liquidity-button-container {
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+.liquidity-button {
+  width: 280px;
+  height: 50px;
+}
+
+#tokenswap-title {
+  height: 20px;
+  padding: 10px;
+  line-height: 20px;
+  font-size: 20px;
+  font-family: "Ubuntu";
+  text-align: left;
+}

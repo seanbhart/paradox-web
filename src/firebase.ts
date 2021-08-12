@@ -5,7 +5,7 @@ import "firebase/functions";
 import "firebase/storage";
 import { firebaseConfig } from "./firebaseConfig";
 
-const debug = false;
+const debug = true;
 let mediaPath = "https://swarmsource.io/media/";
 
 const firebaseApp = firebase.initializeApp(firebaseConfig);

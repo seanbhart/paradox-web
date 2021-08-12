@@ -35,6 +35,7 @@
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
+  margin-top: 30px;
 }
 
 .App-link {
@@ -52,4 +53,8 @@
 
 .MuiTableRow-root:hover {
   cursor: pointer !important;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }

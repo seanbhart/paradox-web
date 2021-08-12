@@ -1,0 +1,29 @@
+#deposit {
+  width: 300px;
+  margin-bottom: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 12px;
+  font-family: "Ubuntu";
+  text-align: left;
+}
+
+#token-menu {
+  margin-left: 4px;
+}
+
+#deposit-button {
+  margin-top: 20px;
+  margin-left: 10px;
+  width: 280px;
+  height: 50px;
+}
+
+#deposit-title {
+  height: 20px;
+  padding: 10px;
+  line-height: 20px;
+  font-size: 20px;
+  font-family: "Ubuntu";
+  text-align: left;
+}
