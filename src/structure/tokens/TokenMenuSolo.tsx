@@ -38,14 +38,14 @@ const useStyles = makeStyles((theme: Theme) =>
 /*
 INTERFACES
 */
-interface TokenMenuProps {
+interface TokenMenuSoloProps {
   tokenFactoryAddress: string;
   label: string;
   tokenSelect: (selected: string) => void;
-  tokenQuantity: (amount: number) => void;
+  tokenQuantity: number;
 }
 
-const TokenMenu: React.FC<TokenMenuProps> = ({
+const TokenMenuSolo: React.FC<TokenMenuSoloProps> = ({
   tokenFactoryAddress,
   label,
   tokenSelect,
@@ -66,11 +66,6 @@ const TokenMenu: React.FC<TokenMenuProps> = ({
     setTokenSelected(token);
     tokenSelect(token);
     // console.log(token);
-  };
-
-  const handleUpdate = (quantity: number) => {
-    tokenQuantity(quantity);
-    // console.log(quantity);
   };
 
   // request access to the user's MetaMask account
@@ -141,10 +136,6 @@ const TokenMenu: React.FC<TokenMenuProps> = ({
     }
   }
 
-  // const ReactSelectAdapter = ({ input, ...rest }) => (
-  //   <Select {...input} {...rest} searchable />
-  // );
-
   // DO ON LOAD
   if (!tokensCalled) {
     tokenList();
@@ -181,12 +172,13 @@ const TokenMenu: React.FC<TokenMenuProps> = ({
           id="filled-basic"
           className={classes.root}
           label={label}
-          placeholder="0.0"
+          //   placeholder="0.0"
           variant="filled"
-          onChange={(e) => handleUpdate(Number(e.target.value))}
+          value={tokenQuantity}
+          disabled={true}
         />
       </div>
     </div>
   );
 };
-export default TokenMenu;
+export default TokenMenuSolo;

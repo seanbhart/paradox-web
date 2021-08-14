@@ -1,0 +1,49 @@
+#tx-container {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+}
+
+#tx-title-container {
+  position: relative;
+  width: 200px;
+  height: 30px;
+}
+
+#tx-title {
+  display: inline;
+  position: absolute;
+  width: 100px;
+  height: 20px;
+  top: 5px;
+  left: 10px;
+  font-size: 14px;
+  font-family: "Ubuntu";
+  line-height: 20px;
+  text-align: left;
+  /* padding: 5px; */
+}
+
+#tx-clear {
+  display: inline;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 5px;
+  right: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: right;
+  /* padding: 5px; */
+  cursor: pointer;
+}
+
+.tx-link-icon {
+  font-size: 14px !important;
+  margin-top: 2px;
+}
+
+.address-cell {
+  max-width: 50px;
+  overflow: hidden;
+}

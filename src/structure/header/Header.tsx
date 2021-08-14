@@ -3,7 +3,6 @@ import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-import Button from "@material-ui/core/Button";
 import IconButton from "@material-ui/core/IconButton";
 import Menu from "@material-ui/core/Menu";
 import MenuIcon from "@material-ui/icons/Menu";
@@ -85,28 +84,28 @@ const Header: React.FC<MenuProps> = ({
 
   var menuHeader = (
     <Typography variant="h6" className={classes.title}>
-      Deposit
+      L1: Tokens
     </Typography>
   );
   switch (menuSelection) {
     case 1:
       menuHeader = (
         <Typography variant="h6" className={classes.title}>
-          Swap
+          L0: Deposit
         </Typography>
       );
       break;
     case 2:
       menuHeader = (
         <Typography variant="h6" className={classes.title}>
-          Liquidity
+          L0: Liquidity
         </Typography>
       );
       break;
     case 3:
       menuHeader = (
         <Typography variant="h6" className={classes.title}>
-          Tokens
+          L0: Swap
         </Typography>
       );
       break;
@@ -137,10 +136,10 @@ const Header: React.FC<MenuProps> = ({
             open={Boolean(anchorEl)}
             onClose={() => handleClose(0)}
           >
-            <MenuItem onClick={() => handleClose(0)}>Deposit</MenuItem>
-            <MenuItem onClick={() => handleClose(1)}>Swap</MenuItem>
-            <MenuItem onClick={() => handleClose(2)}>Liquidity</MenuItem>
-            <MenuItem onClick={() => handleClose(3)}>Tokens</MenuItem>
+            <MenuItem onClick={() => handleClose(0)}>L1: Tokens</MenuItem>
+            <MenuItem onClick={() => handleClose(1)}>L0: Deposit</MenuItem>
+            <MenuItem onClick={() => handleClose(2)}>L0: Liquidity</MenuItem>
+            <MenuItem onClick={() => handleClose(3)}>L0: Swap</MenuItem>
           </Menu>
           {menuHeader}
           {/* <Button color="inherit">Login</Button> */}

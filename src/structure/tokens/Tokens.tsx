@@ -14,21 +14,25 @@ import TableContainer from "@material-ui/core/TableContainer";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
+import OpenInNewIcon from "@material-ui/icons/OpenInNew";
 
-import { colors } from "../../common/Formatting";
 import "./Tokens.css";
-
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
 import DOXERC20Factory from "../../contracts/DOXERC20Factory.sol/DOXERC20Factory.json";
+
+// const nf = Intl.NumberFormat();
 
 const StyledTableCell = withStyles((theme: Theme) =>
   createStyles({
     head: {
       backgroundColor: theme.palette.common.black,
       color: theme.palette.common.white,
+      fontSize: 12,
+      cursor: "default",
     },
     body: {
       fontSize: 14,
+      cursor: "default",
     },
   })
 )(TableCell);
@@ -45,8 +49,8 @@ const StyledTableRow = withStyles((theme: Theme) =>
 
 const useStyles = makeStyles({
   table: {
-    minWidth: 300,
-    maxWidth: 300,
+    minWidth: 400,
+    maxWidth: 400,
   },
 });
 
@@ -57,6 +61,7 @@ interface TokenProps {
   tokenFactoryAddress: string;
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
+  addTransaction: (timestamp: number, address: string) => void;
 }
 
 /*
@@ -79,16 +84,15 @@ const Tokens: React.FC<TokenProps> = ({
   tokenFactoryAddress,
   provider,
   walletAddress,
+  addTransaction,
 }) => {
-  console.log("walletAddress: ", walletAddress);
   const classes = useStyles();
-  // const [user] = useAuthState(firebaseAppAuth);
-  const [tokenAddress, setTokenAddress] = useState("");
   const [tokenName, setTokenName] = useState("Paradox");
   const [tokenSymbol, setTokenSymbol] = useState("DOX");
-  const [tokenOwnerBalance, setTokenOwnerBalance] = useState(
-    ethers.BigNumber.from("1000000000000000000000000")
-  );
+  const [tokenOwnerBalance, setTokenOwnerBalance] = useState(1000000);
+  // const [tokenOwnerBalance, setTokenOwnerBalance] = useState(
+  //   ethers.BigNumber.from("1000000000000000000000000")
+  // );
   const [tokensCalled, setTokensCalled] = useState(false);
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
   // tokens.push(new TokenInfo("test", "TST", 18, ethers.BigNumber.from(100)));
@@ -97,17 +101,17 @@ const Tokens: React.FC<TokenProps> = ({
   FUNCTIONS
   */
   async function createToken() {
-    console.log(
-      "Creating token: ",
-      tokenSymbol,
-      tokenName,
-      tokenOwnerBalance.toString()
-    );
+    // console.log(
+    //   "Creating token: ",
+    //   tokenSymbol,
+    //   tokenName,
+    //   tokenOwnerBalance.toString()
+    // );
     if (
       provider &&
       tokenName !== "" &&
       tokenSymbol !== "" &&
-      tokenOwnerBalance > ethers.BigNumber.from(0)
+      tokenOwnerBalance > 0
     ) {
       const signer = provider.getSigner();
       if (signer) {
@@ -119,17 +123,18 @@ const Tokens: React.FC<TokenProps> = ({
           signer
         );
         try {
-          const transaction = await tokenFactory.createToken(
+          const tx = await tokenFactory.createToken(
             tokenName,
             tokenSymbol,
-            tokenOwnerBalance
+            ethers.utils.parseUnits(tokenOwnerBalance.toString(), 18)
           );
-          await transaction.wait();
-          setTokenAddress(await tokenFactory.getToken(tokenSymbol));
+          addTransaction(Date.now(), tx.hash);
+          await tx.wait();
+          // setTokenAddress(await tokenFactory.getToken(tokenSymbol));
 
           // Reset the token list
           setTokens([]);
-          tokenList();
+          getTokens();
         } catch (error) {
           error.data.message.includes("TOKEN_EXISTS")
             ? alert("That token already exists.")
@@ -141,7 +146,7 @@ const Tokens: React.FC<TokenProps> = ({
     }
   }
 
-  async function tokenBalance(
+  async function _tokenBalance(
     tAddress: string
   ): Promise<[ethers.BigNumber, number]> {
     if (!provider) {
@@ -152,19 +157,18 @@ const Tokens: React.FC<TokenProps> = ({
       return [ethers.BigNumber.from(0), 0];
     }
     const signerAddress = await signer.getAddress();
-    const token1 = new ethers.Contract(tAddress, DOXERC20.abi, signer);
-    const userBalance = await token1.balanceOf(signerAddress);
-    const decimals = await token1.decimals();
+    const token = new ethers.Contract(tAddress, DOXERC20.abi, signer);
+    const userBalance = await token.balanceOf(signerAddress);
+    const decimals = await token.decimals();
     return [userBalance, decimals];
   }
 
-  async function tokenList() {
+  async function getTokens() {
     setTokensCalled(true);
     if (!provider) {
       return;
     }
     const signer = provider.getSigner();
-    console.log("signer: ", signer);
     if (!signer) {
       return;
     }
@@ -173,24 +177,23 @@ const Tokens: React.FC<TokenProps> = ({
       DOXERC20Factory.abi,
       signer
     );
-    console.log("tokenFactory: ", tokenFactory);
 
     if (!tokenFactory) {
       return;
     }
+    // TODO: tokenFactory.tokenListLength() called twice? Function not awaitable?
     const tokenListLength: number = await tokenFactory.tokenListLength();
-    console.log("tokenListLength: ", tokenListLength);
     if (tokenListLength <= 0) {
       return;
     }
-    for (var i = 0; i < tokenListLength; i++) {
+    var newTokensList = [];
+    for (var i = 0; i < Number(tokenListLength); i++) {
       const tokenSymbol: string = await tokenFactory.tokenList(i);
       const tokenAddress: string = await tokenFactory.getToken(tokenSymbol);
 
       const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
       const tokenName: string = await token.name();
-      const [balance, decimals] = await tokenBalance(tokenAddress);
-      console.log("token: ", tokenAddress);
+      const [balance, decimals] = await _tokenBalance(tokenAddress);
       const newTokenInfo = new TokenInfo(
         tokenAddress,
         tokenName,
@@ -198,13 +201,26 @@ const Tokens: React.FC<TokenProps> = ({
         decimals,
         balance
       );
-      setTokens((tokens) => [...tokens, newTokenInfo]);
+
+      // Don't add the token to the list if it already exists
+      if (
+        newTokensList.filter((t) => t.address === tokenAddress).length === 0
+      ) {
+        newTokensList.push(newTokenInfo);
+      }
     }
+    setTokens(newTokensList);
   }
 
   // DO ON LOAD
   if (!tokensCalled && walletAddress) {
-    tokenList();
+    setTokens([]);
+    getTokens();
+
+    // addTransaction(
+    //   Date.now(),
+    //   "0xeb36bdc46e4a737847d549b231bd1f2a148c0bb854b94463ebb010adadd38352"
+    // );
   }
 
   // PAGE CONTENT
@@ -227,15 +243,15 @@ const Tokens: React.FC<TokenProps> = ({
         type="text"
         value={tokenSymbol}
       />
-      <label className="token-input-label">Token Creator Initial Balance</label>
+      <label className="token-input-label">
+        Token Creator Initial Balance (whole tokens)
+      </label>
       <input
-        onChange={(e) =>
-          setTokenOwnerBalance(ethers.BigNumber.from(e.target.value))
-        }
+        onChange={(e) => setTokenOwnerBalance(Number(e.target.value))}
         id="token-input-balance"
         className="token-input"
         // type="number"
-        value={tokenOwnerBalance.toString()}
+        value={(tokenOwnerBalance ? tokenOwnerBalance : 0).toString()}
       />
       <Button
         onClick={createToken}
@@ -251,13 +267,24 @@ const Tokens: React.FC<TokenProps> = ({
   return (
     <div>
       <header className="App-header">
+        <Paper id="tokens-note">
+          <strong>Please Note: </strong>These tokens are created on Layer 1, not
+          inside Paradox (Layer 0). They can be utilized in any other testnet
+          protocol.
+          <br />
+          <br />
+          Use the "L0: Deposit" function (in the top left menu) to move your L1
+          balance to L0.
+        </Paper>
         {createTokenForm}
         <TableContainer component={Paper}>
           <Table className={classes.table} aria-label="simple table">
             <TableHead>
               <TableRow>
                 <StyledTableCell>Symbol</StyledTableCell>
-                <StyledTableCell align="right">Token Name</StyledTableCell>
+                <StyledTableCell align="left">Token Name</StyledTableCell>
+                <StyledTableCell>Etherscan</StyledTableCell>
+                <StyledTableCell align="right">Your L1 Balance</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -266,7 +293,24 @@ const Tokens: React.FC<TokenProps> = ({
                   <StyledTableCell component="th" scope="row">
                     {token.symbol}
                   </StyledTableCell>
-                  <StyledTableCell align="right">{token.name}</StyledTableCell>
+                  <StyledTableCell align="left">{token.name}</StyledTableCell>
+                  <StyledTableCell>
+                    <a
+                      target="_blank"
+                      rel="noreferrer"
+                      href={"https://etherscan.io/tx/" + token.address}
+                    >
+                      <OpenInNewIcon className="token-link-icon" />
+                    </a>
+                  </StyledTableCell>
+                  <StyledTableCell align="right">
+                    {Number(
+                      ethers.utils.formatUnits(
+                        token.userBalance,
+                        token.decimals
+                      )
+                    ).toFixed(4)}
+                  </StyledTableCell>
                 </StyledTableRow>
               ))}
             </TableBody>

@@ -8,7 +8,11 @@
   text-align: left;
 }
 
-#token-menus {
+#liquidity {
+  margin-bottom: 20px;
+}
+
+#tokenliquidity-menus {
   margin-left: 4px;
 }
 
@@ -22,11 +26,20 @@
   height: 50px;
 }
 
-#tokenswap-title {
+#tokenliquidity-title {
   height: 20px;
   padding: 10px;
   line-height: 20px;
   font-size: 20px;
   font-family: "Ubuntu";
   text-align: left;
+}
+
+#tokenliquidity-label-bottom {
+  width: 280px;
+  height: 10px;
+  line-height: 10px;
+  font-size: 10px;
+  font-family: "Ubuntu";
+  text-align: right;
 }

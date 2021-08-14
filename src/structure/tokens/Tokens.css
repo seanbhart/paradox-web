@@ -1,3 +1,15 @@
+#tokens-note {
+  position: relative;
+  width: 284px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  font-family: "Ubuntu";
+  padding: 8px;
+  text-align: justify;
+  line-height: 18px;
+  color: black;
+}
+
 #token-form {
   position: relative;
   width: 300px;
@@ -11,7 +23,7 @@
   clear: both;
   width: 260px;
   margin-left: 10px;
-  font-size: 20px;
+  font-size: 16px;
   font-family: "Ubuntu";
   padding: 8px;
 }
@@ -30,6 +42,13 @@
   font-family: "Ubuntu";
   text-align: left;
   color: black;
+}
+
+.token-link-icon {
+  font-size: 22px !important;
+  /* margin-top: 5px; */
+  cursor: pointer;
+  /* width: 50px; */
 }
 
 #create-button {

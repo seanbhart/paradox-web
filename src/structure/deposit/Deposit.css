@@ -8,6 +8,18 @@
   text-align: left;
 }
 
+#deposit-note {
+  position: relative;
+  width: 284px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  font-family: "Ubuntu";
+  padding: 8px;
+  text-align: justify;
+  line-height: 18px;
+  color: black;
+}
+
 #token-menu {
   margin-left: 4px;
 }
@@ -26,4 +38,21 @@
   font-size: 20px;
   font-family: "Ubuntu";
   text-align: left;
+}
+
+#tokenmenu-label-top {
+  width: 280px;
+  height: 10px;
+  line-height: 10px;
+  font-size: 10px;
+  font-family: "Ubuntu";
+  text-align: right;
+}
+#tokenmenu-label-bottom {
+  width: 280px;
+  height: 10px;
+  line-height: 10px;
+  font-size: 10px;
+  font-family: "Ubuntu";
+  text-align: right;
 }
