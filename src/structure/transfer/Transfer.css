@@ -1,4 +1,4 @@
-#swap {
+#transfer {
   width: 300px;
   margin-bottom: 20px;
   padding-top: 10px;
@@ -8,18 +8,30 @@
   text-align: left;
 }
 
-#token-menus {
+#transfer-note {
+  position: relative;
+  width: 284px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  font-family: "Ubuntu";
+  padding: 8px;
+  text-align: justify;
+  line-height: 18px;
+  color: black;
+}
+
+#transfer-menu {
   margin-left: 4px;
 }
 
-#swap-button {
+#transfer-button {
   margin-top: 20px;
   margin-left: 10px;
   width: 280px;
   height: 50px;
 }
 
-#tokenswap-title {
+#transfer-title {
   height: 20px;
   padding: 10px;
   line-height: 20px;
@@ -28,27 +40,28 @@
   text-align: left;
 }
 
-.tokenswap-label-top {
-  width: 280px;
+.transfermenu-label-top {
+  float: left;
+  width: 135px;
   height: 10px;
   line-height: 10px;
   font-size: 10px;
   font-family: "Ubuntu";
   text-align: right;
 }
-
-.tokenswap-label-bottom {
-  width: 280px;
+.transfermenu-label-top-left {
+  float: left;
+  width: 135px;
   height: 10px;
+  margin-left: 10px;
   line-height: 10px;
   font-size: 10px;
   font-family: "Ubuntu";
-  text-align: right;
+  text-align: left;
 }
-
-.tokenswap-label-info {
+.transfermenu-label-bottom {
   width: 280px;
-  height: 14px;
+  height: 10px;
   line-height: 10px;
   font-size: 10px;
   font-family: "Ubuntu";

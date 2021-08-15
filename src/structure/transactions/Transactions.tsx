@@ -5,7 +5,6 @@ import {
   createStyles,
   makeStyles,
 } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -18,7 +17,7 @@ import ReplayIcon from "@material-ui/icons/Replay";
 import Moment from "react-moment";
 
 import "./Transactions.css";
-import { TransactionInfo } from "../../App";
+import { TransactionInfo, etherscanBaseUrl } from "../../App";
 
 // const nf = Intl.NumberFormat();
 
@@ -104,7 +103,7 @@ const Transactions: React.FC<TransactionsProps> = ({
                     <a
                       target="_blank"
                       rel="noreferrer"
-                      href={"https://etherscan.io/tx/" + transaction.address}
+                      href={etherscanBaseUrl + transaction.address}
                     >
                       <OpenInNewIcon className="tx-link-icon" />
                     </a>

@@ -51,6 +51,10 @@
   /* width: 50px; */
 }
 
+.faucet-icon {
+  cursor: pointer;
+}
+
 #create-button {
   position: relative;
   display: block;

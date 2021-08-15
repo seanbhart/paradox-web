@@ -16,6 +16,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
 import "./Liquidity.css";
+import { tokenFactoryAddress, doxAddress } from "../../App";
 import { TokenInfo } from "../tokens/Tokens";
 import TokenMenu from "../tokens/TokenMenu";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
@@ -58,8 +59,6 @@ const useStyles = makeStyles({
 INTERFACES
 */
 interface LiquidityProps {
-  doxAddress: string;
-  tokenFactoryAddress: string;
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
   addTransaction: (timestamp: number, address: string) => void;
@@ -71,8 +70,6 @@ interface LiquidityProps {
 DEFAULT FUNCTION
 */
 const Liquidity: React.FC<LiquidityProps> = ({
-  doxAddress,
-  tokenFactoryAddress,
   provider,
   walletAddress,
   addTransaction,
@@ -228,20 +225,20 @@ const Liquidity: React.FC<LiquidityProps> = ({
   const liquidity = (
     <div className="liquidity">
       <div id="tokenliquidity-menus">
+        <div id="tokenliquidity-label-top">Current L0 Liquidity</div>
         <TokenMenu
           label={(token1Pool ? token1Pool : 0).toString()}
           tokenFactoryAddress={tokenFactoryAddress}
           tokenSelect={(selection) => tokenSelection(selection, true)}
           tokenQuantity={setToken1Quantity}
         />
-        <div id="tokenliquidity-label-bottom">Current L0 Liquidity</div>
+        <div id="tokenliquidity-label-top">Current L0 Liquidity</div>
         <TokenMenu
           label={(token2Pool ? token2Pool : 0).toString()}
           tokenFactoryAddress={tokenFactoryAddress}
           tokenSelect={(selection) => tokenSelection(selection, false)}
           tokenQuantity={setToken2Quantity}
         />
-        <div id="tokenliquidity-label-bottom">Current L0 Liquidity</div>
       </div>
       <div className="liquidity-button-container">
         <Button

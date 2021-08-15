@@ -100,38 +100,48 @@ const TokenMenuSolo: React.FC<TokenMenuSoloProps> = ({
         (window as any).ethereum
       );
       const signer = provider.getSigner();
+      if (!signer) {
+        return;
+      }
+      const signerAddress = signer.getAddress();
       const tokenFactory = new ethers.Contract(
         tokenFactoryAddress,
         DOXERC20Factory.abi,
         signer
       );
 
-      if (tokenFactory) {
-        const tokenListLength: number = await tokenFactory.tokenListLength();
-        if (tokenListLength > 0) {
-          for (var i = 0; i < tokenListLength; i++) {
-            const tokenSymbol: string = await tokenFactory.tokenList(i);
-            const tokenAddress: string = await tokenFactory.getToken(
-              tokenSymbol
-            );
+      try {
+        if (tokenFactory) {
+          const tokenListLength: number = await tokenFactory.tokenListLength();
+          if (tokenListLength > 0) {
+            for (var i = 0; i < tokenListLength; i++) {
+              const tokenSymbol: string = await tokenFactory.tokenList(i);
+              const tokenAddress: string = await tokenFactory.getToken(
+                tokenSymbol
+              );
 
-            const token = new ethers.Contract(
-              tokenAddress,
-              DOXERC20.abi,
-              signer
-            );
-            const tokenName: string = await token.name();
-            const [balance, decimals] = await tokenBalance(tokenAddress);
-            const tokenInfo = new TokenInfo(
-              tokenAddress,
-              tokenName,
-              tokenSymbol,
-              decimals,
-              balance
-            );
-            setTokens((tokens) => [...tokens, tokenInfo]);
+              const token = new ethers.Contract(
+                tokenAddress,
+                DOXERC20.abi,
+                signer
+              );
+              const tokenName: string = await token.name();
+              const usedFaucet: boolean = await token.usedFaucet(signerAddress);
+              const [balance, decimals] = await tokenBalance(tokenAddress);
+              const tokenInfo = new TokenInfo(
+                tokenAddress,
+                tokenName,
+                tokenSymbol,
+                decimals,
+                balance,
+                usedFaucet
+              );
+              setTokens((tokens) => [...tokens, tokenInfo]);
+            }
           }
         }
+      } catch (error) {
+        console.log(error);
       }
     }
   }
@@ -174,7 +184,7 @@ const TokenMenuSolo: React.FC<TokenMenuSoloProps> = ({
           label={label}
           //   placeholder="0.0"
           variant="filled"
-          value={tokenQuantity}
+          value={tokenQuantity.toFixed(4)}
           disabled={true}
         />
       </div>

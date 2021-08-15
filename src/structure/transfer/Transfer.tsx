@@ -15,9 +15,10 @@ import TableContainer from "@material-ui/core/TableContainer";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
-import "./Deposit.css";
+import "./Transfer.css";
 import { tokenFactoryAddress, doxAddress } from "../../App";
 import { TokenInfo } from "../tokens/Tokens";
+import AccountMenu from "./AccountMenu";
 import TokenMenu from "../tokens/TokenMenu";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
 import DOXERC20Factory from "../../contracts/DOXERC20Factory.sol/DOXERC20Factory.json";
@@ -58,7 +59,7 @@ const useStyles = makeStyles({
 /*
 CLASSES
 */
-interface DepositProps {
+interface TransferProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
   addTransaction: (timestamp: number, address: string) => void;
@@ -69,7 +70,7 @@ interface DepositProps {
 /*
 DEFAULT FUNCTION
 */
-const Deposit: React.FC<DepositProps> = ({
+const Transfer: React.FC<TransferProps> = ({
   provider,
   walletAddress,
   addTransaction,
@@ -77,6 +78,7 @@ const Deposit: React.FC<DepositProps> = ({
   getBooks,
 }) => {
   const classes = useStyles();
+  const [accountSelection, setAccountSelection] = useState("");
   const [tokenSelection, setTokenSelection] = useState("");
   const [tokenQuantity, setTokenQuantity] = useState(0);
   const [buttonLabel, setButtonLabel] = useState("Connect Wallet");
@@ -84,36 +86,20 @@ const Deposit: React.FC<DepositProps> = ({
   const [balanceString, setBalanceString] = useState("0");
 
   if (walletAddress !== "" && buttonDisabled) {
-    setButtonLabel("Deposit");
+    setButtonLabel("Transfer");
     setButtonDisabled(false);
+  }
+
+  async function newAccountSelected(address: string) {
+    setAccountSelection(address);
   }
 
   async function newTokenSelected(symbol: string) {
     setTokenSelection(symbol);
-    await getTokenBalance(symbol);
+    await getBookBalance(symbol);
   }
 
-  async function getBookBalance(tokenAddress: string) {
-    if (!provider) {
-      return;
-    }
-    const signer = provider.getSigner();
-    if (!signer) {
-      return;
-    }
-
-    // // Get the acount balance from the token
-    // const signerAddress = await signer.getAddress();
-    // const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
-    // const book = await dox.getBook(signerAddress, tokenAddress);
-    // let res = ethers.utils.formatUnits(book, 18);
-    // res = (+res).toFixed(4);
-    // console.log("book: ", res, 18);
-
-    getBooks();
-  }
-
-  async function getTokenBalance(symbol: string) {
+  async function getBookBalance(symbol: string) {
     if (!provider) {
       return;
     }
@@ -125,24 +111,27 @@ const Deposit: React.FC<DepositProps> = ({
 
     // Get the acount balance from the token
     const signerAddress = await signer.getAddress();
-    const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
-    const userBalance = await token.balanceOf(signerAddress);
-    const decimals = await token.decimals();
-    let res = ethers.utils.formatUnits(userBalance, decimals);
+    const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
+    const book = await dox.getBook(signerAddress, tokenAddress);
+    let res = ethers.utils.formatUnits(book, 18);
     res = (+res).toFixed(4);
-    // console.log("balance: ", res, decimals);
+    console.log("book: ", res, 18);
     setBalanceString(res);
 
-    await getBookBalance(tokenAddress);
+    getBooks();
   }
 
-  async function deposit() {
-    await _deposit(tokenSelection, tokenQuantity);
+  async function transfer() {
+    await _transfer(tokenSelection, accountSelection, tokenQuantity);
   }
 
-  // The deposit amount set will be in token amounts with decimals
+  // The transfer amount set will be in token amounts with decimals
   // convert to to bignumber with the proper 00s to accomodate decimals
-  async function _deposit(symbol: string, amount: number) {
+  async function _transfer(
+    symbol: string,
+    accountAddress: string,
+    amount: number
+  ) {
     if (!provider) {
       return;
     }
@@ -156,7 +145,7 @@ const Deposit: React.FC<DepositProps> = ({
     const decimals = await token.decimals();
     const bigAmt = ethers.utils.parseUnits(amount.toString(), decimals);
     try {
-      var tx = await token.approve(doxAddress, bigAmt);
+      var tx = await token.approve(accountAddress, bigAmt);
       addTransaction(Date.now(), tx.hash);
       await tx.wait();
     } catch (error) {
@@ -167,19 +156,23 @@ const Deposit: React.FC<DepositProps> = ({
     }
     try {
       const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
-      tx = await dox.deposit(tokenAddress, bigAmt);
+      tx = await dox.transfer(tokenAddress, accountAddress, bigAmt);
       addTransaction(Date.now(), tx.hash);
       await tx.wait();
     } catch (error) {
       error.data.message.includes("INVALID_TOKEN_ADDRESS")
         ? alert("That token address is not valid.")
-        : error.data.message.includes("INVALID_DEPOSIT_AMOUNT")
-        ? alert("That deposit amount is not valid.")
-        : alert("There was an error completing the deposit. Please try again.");
+        : error.data.message.includes("INVALID_ACCOUNT_ADDRESS")
+        ? alert("That transfer amount is not valid.")
+        : error.data.message.includes("INVALID_TRANSFER_AMOUNT")
+        ? alert("That transfer amount is not valid.")
+        : alert(
+            "There was an error completing the transfer. Please try again."
+          );
     }
 
     // Refresh the token balance
-    await getTokenBalance(symbol);
+    await getBookBalance(symbol);
   }
 
   async function _getToken(symbol: string) {
@@ -207,22 +200,30 @@ const Deposit: React.FC<DepositProps> = ({
   }
 
   // PAGE CONTENT
-  const tokenDeposit = (
-    <Paper id="deposit">
-      <div id="deposit-title">Paradox</div>
-      <div id="token-menu">
-        <div id="tokenmenu-label-top">Available L1 Balance</div>
+  const tokenTransfer = (
+    <Paper id="transfer">
+      <div id="transfer-title">Paradox</div>
+      <div id="transfer-menu">
+        <div className="transfermenu-label-top-left">Destination Address</div>
+        <AccountMenu
+          label={String(balanceString)}
+          accountSelect={newAccountSelected}
+        />
+        <div>
+          <div className="transfermenu-label-top-left">Token</div>
+          <div className="transfermenu-label-top">Available L0 Balance</div>
+        </div>
         <TokenMenu
           label={String(balanceString)}
           tokenFactoryAddress={tokenFactoryAddress}
           tokenSelect={newTokenSelected}
           tokenQuantity={setTokenQuantity}
         />
-        <div id="tokenmenu-label-bottom">L0 Deposit Amount</div>
+        <div className="transfermenu-label-bottom">L0 Transfer Amount</div>
       </div>
       <Button
-        onClick={deposit}
-        id="deposit-button"
+        onClick={transfer}
+        id="transfer-button"
         variant="contained"
         color="primary"
         disabled={buttonDisabled}
@@ -235,13 +236,12 @@ const Deposit: React.FC<DepositProps> = ({
   return (
     <div>
       <header className="App-header">
-        <Paper id="deposit-note">
-          <strong>Please Note: </strong>Deposit transfers Layer 1 tokens to
-          Layer 0. At this time, only tokens created using the token factory
-          contract (see "L1: Tokens" in the menu) are available for transfer to
-          Layer 0.
+        <Paper id="transfer-note">
+          <strong>Please Note: </strong>Transfers only occur between accounts in
+          Layer 0. Use the "L0: Deposit" function to move Layer 1 assets to
+          Layer 0 before L0 to L0 transfer.
         </Paper>
-        {tokenDeposit}
+        {tokenTransfer}
         <TableContainer component={Paper}>
           <Table className={classes.table} aria-label="simple table">
             <TableHead>
@@ -276,4 +276,4 @@ const Deposit: React.FC<DepositProps> = ({
   );
 };
 
-export default Deposit;
+export default Transfer;

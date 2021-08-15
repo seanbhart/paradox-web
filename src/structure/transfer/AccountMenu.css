@@ -1,0 +1,11 @@
+#form-left {
+  position: relative;
+  display: inline;
+}
+#form-right {
+  position: relative;
+  display: inline;
+}
+#account-select-1-select {
+  text-overflow: ellipsis;
+}

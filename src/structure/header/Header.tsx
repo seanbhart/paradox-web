@@ -109,6 +109,13 @@ const Header: React.FC<MenuProps> = ({
         </Typography>
       );
       break;
+    case 4:
+      menuHeader = (
+        <Typography variant="h6" className={classes.title}>
+          L0: Transfer
+        </Typography>
+      );
+      break;
     default:
       break;
   }
@@ -140,6 +147,7 @@ const Header: React.FC<MenuProps> = ({
             <MenuItem onClick={() => handleClose(1)}>L0: Deposit</MenuItem>
             <MenuItem onClick={() => handleClose(2)}>L0: Liquidity</MenuItem>
             <MenuItem onClick={() => handleClose(3)}>L0: Swap</MenuItem>
+            <MenuItem onClick={() => handleClose(4)}>L0: Transfer</MenuItem>
           </Menu>
           {menuHeader}
           {/* <Button color="inherit">Login</Button> */}

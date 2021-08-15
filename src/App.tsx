@@ -1,25 +1,26 @@
 import React, { useState } from "react";
 // import withFirebaseAuth from 'react-with-firebase-auth'
 // import { useAuthState } from 'react-firebase-hooks/auth';
+// import { db, firebaseAppAuth, functions, storage } from "./firebase";
 import { ethers } from "ethers";
 
 import Deposit from "./structure/deposit/Deposit";
 import Header from "./structure/header/Header";
 import Swap from "./structure/amm/Swap";
 import Liquidity from "./structure/amm/Liquidity";
+import Transfer from "./structure/transfer/Transfer";
 import Tokens, { TokenInfo } from "./structure/tokens/Tokens";
 import Transactions from "./structure/transactions/Transactions";
-// import { db, firebaseAppAuth, functions, storage } from "./firebase";
 import { colors } from "./common/Formatting";
 import "./App.css";
 
 import DOXERC20 from "./contracts/DOXERC20.sol/DOXERC20.json";
-import DOXERC20Factory from "./contracts/DOXERC20Factory.sol/DOXERC20Factory.json";
 import ParadoxV1 from "./contracts/ParadoxV1.sol/ParadoxV1.json";
 
-const tokenFactoryAddress: string =
-  "0x8bEe2037448F096900Fd9affc427d38aE6CC0350";
-const doxAddress: string = "0x942ED2fa862887Dc698682cc6a86355324F0f01e";
+export const etherscanBaseUrl: string = "https://etherscan.io/tx/";
+export const tokenFactoryAddress: string =
+  "0xA9e6Bfa2BF53dE88FEb19761D9b2eE2e821bF1Bf";
+export const doxAddress: string = "0x1E3b98102e19D3a164d239BdD190913C2F02E756";
 
 /*
 CLASSES
@@ -79,32 +80,38 @@ export default function App() {
     const signerAddress = await signer.getAddress();
     const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
 
-    // Get the list of tokens owned on L0 by this account
-    const tokenListLength = await dox.getBookListLength(signerAddress);
-    var newTokensList = [];
-    for (var i = 0; i < Number(tokenListLength); i++) {
-      const tokenAddress = await dox.getBookList(signerAddress, i);
-      const book = await dox.getBook(signerAddress, tokenAddress);
-      const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
-      const tokenName: string = await token.name();
-      const tokenSymbol: string = await token.symbol();
-      const [balance, decimals] = await _tokenBalance(tokenAddress);
-      const newTokenInfo = new TokenInfo(
-        tokenAddress,
-        tokenName,
-        tokenSymbol,
-        decimals,
-        book
-      );
+    try {
+      // Get the list of tokens owned on L0 by this account
+      const tokenListLength = await dox.getBookListLength(signerAddress);
+      var newTokensList = [];
+      for (var i = 0; i < Number(tokenListLength); i++) {
+        const tokenAddress = await dox.getBookList(signerAddress, i);
+        const book = await dox.getBook(signerAddress, tokenAddress);
+        const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
+        const tokenName: string = await token.name();
+        const tokenSymbol: string = await token.symbol();
+        const usedFaucet: boolean = await token.usedFaucet(signerAddress);
+        const [, decimals] = await _tokenBalance(tokenAddress);
+        const newTokenInfo = new TokenInfo(
+          tokenAddress,
+          tokenName,
+          tokenSymbol,
+          decimals,
+          book,
+          usedFaucet
+        );
 
-      // Don't add the token to the list if it already exists
-      if (
-        newTokensList.filter((t) => t.address === tokenAddress).length === 0
-      ) {
-        newTokensList.push(newTokenInfo);
+        // Don't add the token to the list if it already exists
+        if (
+          newTokensList.filter((t) => t.address === tokenAddress).length === 0
+        ) {
+          newTokensList.push(newTokenInfo);
+        }
       }
+      setTokens(newTokensList);
+    } catch (error) {
+      console.log(error);
     }
-    setTokens(newTokensList);
   }
 
   function addTransaction(timestamp: number, address: string) {
@@ -124,7 +131,6 @@ export default function App() {
 
   var content = (
     <Tokens
-      tokenFactoryAddress={tokenFactoryAddress}
       provider={provider}
       walletAddress={walletAddress}
       addTransaction={addTransaction}
@@ -134,8 +140,6 @@ export default function App() {
     case 1:
       content = (
         <Deposit
-          doxAddress={doxAddress}
-          tokenFactoryAddress={tokenFactoryAddress}
           provider={provider}
           walletAddress={walletAddress}
           addTransaction={addTransaction}
@@ -147,8 +151,6 @@ export default function App() {
     case 2:
       content = (
         <Liquidity
-          doxAddress={doxAddress}
-          tokenFactoryAddress={tokenFactoryAddress}
           provider={provider}
           walletAddress={walletAddress}
           addTransaction={addTransaction}
@@ -160,8 +162,17 @@ export default function App() {
     case 3:
       content = (
         <Swap
-          doxAddress={doxAddress}
-          tokenFactoryAddress={tokenFactoryAddress}
+          provider={provider}
+          walletAddress={walletAddress}
+          addTransaction={addTransaction}
+          tokens={tokens}
+          getBooks={getBooks}
+        />
+      );
+      break;
+    case 4:
+      content = (
+        <Transfer
           provider={provider}
           walletAddress={walletAddress}
           addTransaction={addTransaction}

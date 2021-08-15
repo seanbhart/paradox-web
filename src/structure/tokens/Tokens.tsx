@@ -15,8 +15,11 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import OpenInNewIcon from "@material-ui/icons/OpenInNew";
+import InvertColorsIcon from "@material-ui/icons/InvertColors";
+import InvertColorsOffIcon from "@material-ui/icons/InvertColorsOff";
 
 import "./Tokens.css";
+import { etherscanBaseUrl, tokenFactoryAddress } from "../../App";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
 import DOXERC20Factory from "../../contracts/DOXERC20Factory.sol/DOXERC20Factory.json";
 
@@ -58,7 +61,6 @@ const useStyles = makeStyles({
 INTERFACES
 */
 interface TokenProps {
-  tokenFactoryAddress: string;
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
   addTransaction: (timestamp: number, address: string) => void;
@@ -73,7 +75,8 @@ export class TokenInfo {
     public name: string,
     public symbol: string,
     public decimals: number,
-    public userBalance: ethers.BigNumber
+    public userBalance: ethers.BigNumber,
+    public usedFaucet: boolean
   ) {}
 }
 
@@ -81,7 +84,6 @@ export class TokenInfo {
 DEFAULT FUNCTION
 */
 const Tokens: React.FC<TokenProps> = ({
-  tokenFactoryAddress,
   provider,
   walletAddress,
   addTransaction,
@@ -133,8 +135,7 @@ const Tokens: React.FC<TokenProps> = ({
           // setTokenAddress(await tokenFactory.getToken(tokenSymbol));
 
           // Reset the token list
-          setTokens([]);
-          getTokens();
+          await getTokens();
         } catch (error) {
           error.data.message.includes("TOKEN_EXISTS")
             ? alert("That token already exists.")
@@ -172,49 +173,71 @@ const Tokens: React.FC<TokenProps> = ({
     if (!signer) {
       return;
     }
+    const signerAddress = signer.getAddress();
     const tokenFactory = new ethers.Contract(
       tokenFactoryAddress,
       DOXERC20Factory.abi,
       signer
     );
 
-    if (!tokenFactory) {
-      return;
-    }
-    // TODO: tokenFactory.tokenListLength() called twice? Function not awaitable?
-    const tokenListLength: number = await tokenFactory.tokenListLength();
-    if (tokenListLength <= 0) {
-      return;
-    }
-    var newTokensList = [];
-    for (var i = 0; i < Number(tokenListLength); i++) {
-      const tokenSymbol: string = await tokenFactory.tokenList(i);
-      const tokenAddress: string = await tokenFactory.getToken(tokenSymbol);
-
-      const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
-      const tokenName: string = await token.name();
-      const [balance, decimals] = await _tokenBalance(tokenAddress);
-      const newTokenInfo = new TokenInfo(
-        tokenAddress,
-        tokenName,
-        tokenSymbol,
-        decimals,
-        balance
-      );
-
-      // Don't add the token to the list if it already exists
-      if (
-        newTokensList.filter((t) => t.address === tokenAddress).length === 0
-      ) {
-        newTokensList.push(newTokenInfo);
+    try {
+      if (!tokenFactory) {
+        return;
       }
+      // TODO: tokenFactory.tokenListLength() called twice? Function not available?
+      const tokenListLength: number = await tokenFactory.tokenListLength();
+      if (tokenListLength <= 0) {
+        return;
+      }
+      var newTokensList = [];
+      for (var i = 0; i < Number(tokenListLength); i++) {
+        const tokenSymbol: string = await tokenFactory.tokenList(i);
+        const tokenAddress: string = await tokenFactory.getToken(tokenSymbol);
+
+        const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
+        const tokenName: string = await token.name();
+        const usedFaucet: boolean = await token.usedFaucet(signerAddress);
+        const [balance, decimals] = await _tokenBalance(tokenAddress);
+        const newTokenInfo = new TokenInfo(
+          tokenAddress,
+          tokenName,
+          tokenSymbol,
+          decimals,
+          balance,
+          usedFaucet
+        );
+
+        // Don't add the token to the list if it already exists
+        if (
+          newTokensList.filter((t) => t.address === tokenAddress).length === 0
+        ) {
+          newTokensList.push(newTokenInfo);
+        }
+      }
+      setTokens([]);
+      setTokens(newTokensList);
+    } catch (error) {
+      console.log(error);
     }
-    setTokens(newTokensList);
+  }
+
+  async function activateFaucet(tokenAddress: string) {
+    if (!provider) {
+      return;
+    }
+    const signer = provider.getSigner();
+    if (!signer) {
+      return;
+    }
+    const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
+    const tx = await token.faucet();
+    addTransaction(Date.now(), tx.hash);
+    await tx.wait();
+    await getTokens();
   }
 
   // DO ON LOAD
   if (!tokensCalled && walletAddress) {
-    setTokens([]);
     getTokens();
 
     // addTransaction(
@@ -264,6 +287,56 @@ const Tokens: React.FC<TokenProps> = ({
     </Paper>
   );
 
+  const tokenTable = (
+    <TableContainer component={Paper}>
+      <Table className={classes.table} aria-label="simple table">
+        <TableHead>
+          <TableRow>
+            <StyledTableCell>Symbol</StyledTableCell>
+            <StyledTableCell align="left">Token Name</StyledTableCell>
+            <StyledTableCell>Etherscan</StyledTableCell>
+            <StyledTableCell align="left">Faucet</StyledTableCell>
+            <StyledTableCell align="right">Your L1 Balance</StyledTableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {tokens.map((token) => (
+            <StyledTableRow key={token.symbol}>
+              <StyledTableCell component="th" scope="row">
+                {token.symbol}
+              </StyledTableCell>
+              <StyledTableCell align="left">{token.name}</StyledTableCell>
+              <StyledTableCell>
+                <a
+                  target="_blank"
+                  rel="noreferrer"
+                  href={etherscanBaseUrl + token.address}
+                >
+                  <OpenInNewIcon className="token-link-icon" />
+                </a>
+              </StyledTableCell>
+              <StyledTableCell align="left">
+                {token.usedFaucet ? (
+                  <InvertColorsOffIcon className="faucet-icon" />
+                ) : (
+                  <InvertColorsIcon
+                    className="faucet-icon"
+                    onClick={async () => await activateFaucet(token.address)}
+                  />
+                )}
+              </StyledTableCell>
+              <StyledTableCell align="right">
+                {Number(
+                  ethers.utils.formatUnits(token.userBalance, token.decimals)
+                ).toFixed(4)}
+              </StyledTableCell>
+            </StyledTableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
   return (
     <div>
       <header className="App-header">
@@ -277,45 +350,7 @@ const Tokens: React.FC<TokenProps> = ({
           balance to L0.
         </Paper>
         {createTokenForm}
-        <TableContainer component={Paper}>
-          <Table className={classes.table} aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <StyledTableCell>Symbol</StyledTableCell>
-                <StyledTableCell align="left">Token Name</StyledTableCell>
-                <StyledTableCell>Etherscan</StyledTableCell>
-                <StyledTableCell align="right">Your L1 Balance</StyledTableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {tokens.map((token) => (
-                <StyledTableRow key={token.symbol}>
-                  <StyledTableCell component="th" scope="row">
-                    {token.symbol}
-                  </StyledTableCell>
-                  <StyledTableCell align="left">{token.name}</StyledTableCell>
-                  <StyledTableCell>
-                    <a
-                      target="_blank"
-                      rel="noreferrer"
-                      href={"https://etherscan.io/tx/" + token.address}
-                    >
-                      <OpenInNewIcon className="token-link-icon" />
-                    </a>
-                  </StyledTableCell>
-                  <StyledTableCell align="right">
-                    {Number(
-                      ethers.utils.formatUnits(
-                        token.userBalance,
-                        token.decimals
-                      )
-                    ).toFixed(4)}
-                  </StyledTableCell>
-                </StyledTableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {tokenTable}
       </header>
     </div>
   );
