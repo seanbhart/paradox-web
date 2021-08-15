@@ -64,6 +64,7 @@ interface LiquidityProps {
   addTransaction: (timestamp: number, address: string) => void;
   tokens: TokenInfo[];
   getBooks: () => void;
+  updateData: () => void;
 }
 
 /*
@@ -75,6 +76,7 @@ const Liquidity: React.FC<LiquidityProps> = ({
   addTransaction,
   tokens,
   getBooks,
+  updateData,
 }) => {
   const classes = useStyles();
   const [token1Selection, setToken1Selection] = useState("");
@@ -84,22 +86,55 @@ const Liquidity: React.FC<LiquidityProps> = ({
   const [token1Pool, setToken1Pool] = useState(0);
   const [token2Pool, setToken2Pool] = useState(0);
   const [addButtonLabel, setAddButtonLabel] = useState("Connect Wallet");
-  const [removeButtonLabel, setRemoveButtonLabel] = useState("Connect Wallet");
+  // const [removeButtonLabel, setRemoveButtonLabel] = useState("Connect Wallet");
   const [buttonDisabled, setButtonDisabled] = useState(true);
 
-  if (walletAddress !== "" && buttonDisabled) {
-    setAddButtonLabel("Add Liquidity");
-    setRemoveButtonLabel("Remove Liquidity");
-    setButtonDisabled(false);
+  // if (walletAddress !== "" && buttonDisabled) {
+  //   setAddButtonLabel("Add Liquidity");
+  //   // setRemoveButtonLabel("Remove Liquidity");
+  //   setButtonDisabled(false);
+  // }
+
+  if (walletAddress !== "" && addButtonLabel === "Connect Wallet") {
+    setAddButtonLabel("Choose Tokens");
+    updateData();
   }
 
-  function tokenSelection(selection: string, isToken1: boolean) {
+  function updateQuantity(quantity: number, isToken1: boolean) {
+    if (isToken1) {
+      setToken1Quantity(quantity);
+    } else {
+      setToken2Quantity(quantity);
+    }
+
+    updateLabels();
+  }
+
+  async function tokenSelection(selection: string, isToken1: boolean) {
+    var exists: boolean | undefined = false;
     if (isToken1) {
       setToken1Selection(selection);
-      _findPair(selection, token2Selection);
+      exists = await _findPair(selection, token2Selection);
     } else {
       setToken2Selection(selection);
-      _findPair(token1Selection, selection);
+      exists = await _findPair(token1Selection, selection);
+    }
+    // console.log("tokenSelection exists: ", exists);
+
+    if (exists) {
+      updateLabels();
+    }
+  }
+
+  function updateLabels() {
+    // Only show the swap button when the output is successfully calculated
+    // and the account has enough tokens to swap
+    if (token1Quantity > 0 && token2Quantity > 0) {
+      setAddButtonLabel("Add Liquidity");
+      setButtonDisabled(false);
+    } else {
+      setAddButtonLabel("Invalid Quantity");
+      setButtonDisabled(true);
     }
   }
 
@@ -126,9 +161,11 @@ const Liquidity: React.FC<LiquidityProps> = ({
       setToken2Pool(
         Number(ethers.utils.formatUnits(order ? cpi.b : cpi.a, decimals2))
       );
+      return true;
     } catch (error) {
       console.log(error);
       alert("We're sorry, there was an error, please try again.");
+      return false; // If the pair does not exist, or there was an error.
     }
   }
 
@@ -191,6 +228,10 @@ const Liquidity: React.FC<LiquidityProps> = ({
       //   order
       // );
     } catch (error) {
+      console.log(error);
+      if (!error.data.message) {
+        return;
+      }
       error.data.message.includes("INSUFFICIENT_BOOK_BALANCE")
         ? alert("You do not own enough tokens to deposit that amount.")
         : alert("There was an error when adding liquidity. Please try again.");
@@ -225,20 +266,37 @@ const Liquidity: React.FC<LiquidityProps> = ({
   const liquidity = (
     <div className="liquidity">
       <div id="tokenliquidity-menus">
-        <div id="tokenliquidity-label-top">Current L0 Liquidity</div>
+        <div className="tokenliquidity-label-top">Current L0 Liquidity</div>
         <TokenMenu
-          label={(token1Pool ? token1Pool : 0).toString()}
+          label={(token1Pool ? token1Pool : 0).toFixed(4)}
           tokenFactoryAddress={tokenFactoryAddress}
-          tokenSelect={(selection) => tokenSelection(selection, true)}
-          tokenQuantity={setToken1Quantity}
+          tokenSelect={async (selection) =>
+            await tokenSelection(selection, true)
+          }
+          tokenQuantity={(quantity) => updateQuantity(quantity, true)}
         />
-        <div id="tokenliquidity-label-top">Current L0 Liquidity</div>
+        <div className="tokenliquidity-label-top">Current L0 Liquidity</div>
         <TokenMenu
-          label={(token2Pool ? token2Pool : 0).toString()}
+          label={(token2Pool ? token2Pool : 0).toFixed(4)}
           tokenFactoryAddress={tokenFactoryAddress}
-          tokenSelect={(selection) => tokenSelection(selection, false)}
-          tokenQuantity={setToken2Quantity}
+          tokenSelect={async (selection) =>
+            await tokenSelection(selection, false)
+          }
+          tokenQuantity={(quantity) => updateQuantity(quantity, false)}
         />
+      </div>
+      <div>
+        <div className="tokenliquidity-label-info">
+          {"Current Ratio: " +
+            (token1Pool && token2Pool ? token1Pool / token2Pool : 0).toFixed(4)}
+        </div>
+        <div className="tokenliquidity-label-info">
+          {"Your Ratio: " +
+            (token1Quantity && token2Quantity
+              ? token1Quantity / token2Quantity
+              : 0
+            ).toFixed(4)}
+        </div>
       </div>
       <div className="liquidity-button-container">
         <Button
@@ -252,7 +310,7 @@ const Liquidity: React.FC<LiquidityProps> = ({
           {addButtonLabel}
         </Button>
       </div>
-      <div className="liquidity-button-container">
+      {/* <div className="liquidity-button-container">
         <Button
           id="remove-button"
           className="liquidity-button"
@@ -262,7 +320,7 @@ const Liquidity: React.FC<LiquidityProps> = ({
         >
           {removeButtonLabel}
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 
@@ -274,7 +332,7 @@ const Liquidity: React.FC<LiquidityProps> = ({
           withdrawal are not operational at this time.
         </Paper>
         <Paper id="liquidity">
-          <div id="tokenliquidity-title">Paradox</div>
+          <div id="tokenliquidity-title">Paradox LP Pair</div>
           {liquidity}
         </Paper>
         <TableContainer component={Paper}>

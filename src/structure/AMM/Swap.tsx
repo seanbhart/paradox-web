@@ -65,6 +65,7 @@ interface SwapProps {
   addTransaction: (timestamp: number, address: string) => void;
   tokens: TokenInfo[];
   getBooks: () => void;
+  updateData: () => void;
 }
 
 /*
@@ -77,6 +78,7 @@ const Swap: React.FC<SwapProps> = ({
   addTransaction,
   tokens,
   getBooks,
+  updateData,
 }) => {
   const classes = useStyles();
   const [token1Selection, setToken1Selection] = useState("");
@@ -84,8 +86,8 @@ const Swap: React.FC<SwapProps> = ({
   const [token1Quantity, setToken1Quantity] = useState(0);
   const [token2Quantity, setToken2Quantity] = useState(0);
   const [token1Available, setToken1Available] = useState(0);
-  const [token1Pool, setToken1Pool] = useState(0);
-  const [token2Pool, setToken2Pool] = useState(0);
+  // const [token1Pool, setToken1Pool] = useState(0);
+  // const [token2Pool, setToken2Pool] = useState(0);
   const [buttonLabel, setButtonLabel] = useState("Connect Wallet");
   const [buttonDisabled, setButtonDisabled] = useState(true);
   const [priceCurrent, setPriceCurrent] = useState(0.0);
@@ -93,6 +95,7 @@ const Swap: React.FC<SwapProps> = ({
 
   if (walletAddress !== "" && buttonLabel === "Connect Wallet") {
     setButtonLabel("Choose Tokens");
+    updateData();
   }
 
   // // TODO: Finish check and reset
@@ -169,26 +172,28 @@ const Swap: React.FC<SwapProps> = ({
       const t2Pool: number = Number(
         ethers.utils.formatUnits(order ? cpi.b : cpi.a, decimals2)
       );
-      setToken1Pool(t1Pool);
-      setToken2Pool(t2Pool);
+      // setToken1Pool(t1Pool);
+      // setToken2Pool(t2Pool);
       setPriceCurrent(t2Pool / t1Pool);
 
       const outputNum = Number(ethers.utils.formatUnits(output, decimals2));
       setToken2Quantity(outputNum);
       setPriceOutput(outputNum / quantity);
 
+      var userBal = 0;
       // Find the input token for the current account to check available quantity.
       tokens.every((token) => {
         if (token.address === token1Address) {
-          setToken1Available(
-            Number(ethers.utils.formatUnits(token.userBalance, decimals1))
+          userBal = Number(
+            ethers.utils.formatUnits(token.userBalance, decimals1)
           );
+          setToken1Available(userBal);
           return false;
         }
         return true;
       });
 
-      if (token1Available >= quantity) {
+      if (userBal >= quantity) {
         // Only show the swap button when the output is successfully calculated
         // and the account has enough tokens to swap
         setButtonLabel("Swap");
@@ -199,6 +204,9 @@ const Swap: React.FC<SwapProps> = ({
       }
     } catch (error) {
       console.log(error);
+      if (!error.data.message) {
+        return;
+      }
       error.data.message.includes("TOKEN_PAIR_NOT_FOUND")
         ? alert(
             "That liquidity pool does not exist. Go to 'L0: Liquidity' in the menu and add liquidity to the pair pool."
@@ -265,6 +273,10 @@ const Swap: React.FC<SwapProps> = ({
       // with the new slippage calc
       updateQuantity(token1Quantity);
     } catch (error) {
+      console.log(error);
+      if (!error.data.message) {
+        return;
+      }
       error.data.message.includes("INSUFFICIENT_BOOK_BALANCE")
         ? alert("You do not own enough tokens to deposit that amount.")
         : alert("There was an error during the swap. Please try again.");

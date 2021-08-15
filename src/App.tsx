@@ -17,16 +17,22 @@ import "./App.css";
 import DOXERC20 from "./contracts/DOXERC20.sol/DOXERC20.json";
 import ParadoxV1 from "./contracts/ParadoxV1.sol/ParadoxV1.json";
 
-export const etherscanBaseUrl: string = "https://etherscan.io/tx/";
+export const etherscanTxUrl: string = "https://kovan.etherscan.io/tx/";
+export const etherscanTokenUrl: string = "https://kovan.etherscan.io/token/";
 export const tokenFactoryAddress: string =
-  "0xA9e6Bfa2BF53dE88FEb19761D9b2eE2e821bF1Bf";
-export const doxAddress: string = "0x1E3b98102e19D3a164d239BdD190913C2F02E756";
+  "0xa6AB32d541e8368caDe2f71038f3334AafBb75DA";
+export const doxAddress: string = "0x59cfc18BCF6960870c73505b5b454BF174E7Bc4B";
 
 /*
 CLASSES
 */
 export class TransactionInfo {
   constructor(public timestamp: number, public address: string) {}
+}
+export class AccountInfo {
+  constructor(
+    public address: string // public name: string, // public balance: ethers.BigNumber
+  ) {}
 }
 
 /*
@@ -39,17 +45,32 @@ export default function App() {
   const [walletAddress, setWalletAddress] = useState("");
   const [menuSelection, setMenuSelection] = useState<number>(0);
   const [transactions, setTransactions] = useState<TransactionInfo[]>([]);
+  const [accounts, setAccounts] = useState<AccountInfo[]>([]);
+  const [accountsChecked, setAccountsChecked] = useState(false);
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
   const [tokensChecked, setTokensChecked] = useState(false);
 
+  // DO ON LOAD
   if (!tokensChecked) {
     if (provider) {
       const signer = provider.getSigner();
       if (signer) {
-        setTokensChecked(true);
         getBooks();
       }
     }
+  }
+  if (!accountsChecked) {
+    if (provider) {
+      const signer = provider.getSigner();
+      if (signer) {
+        getAccounts();
+      }
+    }
+  }
+
+  function updateData() {
+    getBooks();
+    getAccounts();
   }
 
   async function _tokenBalance(
@@ -77,6 +98,7 @@ export default function App() {
     if (!signer) {
       return;
     }
+    setTokensChecked(true);
     const signerAddress = await signer.getAddress();
     const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
 
@@ -114,6 +136,42 @@ export default function App() {
     }
   }
 
+  async function getAccounts() {
+    if (typeof (window as any).ethereum !== "undefined") {
+      setAccountsChecked(true);
+      const provider = new ethers.providers.Web3Provider(
+        (window as any).ethereum
+      );
+      const signer = provider.getSigner();
+      if (!signer) {
+        return;
+      }
+      const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
+
+      try {
+        var newAccountsList = [];
+        const accountListLength: number = await dox.accountListLength();
+        if (accountListLength > 0) {
+          for (var i = 0; i < accountListLength; i++) {
+            const address: string = await dox.getAccount(i);
+            const accountInfo = new AccountInfo(address);
+            // setAccounts((accounts) => [...accounts, accountInfo]);
+
+            // Don't add the token to the list if it already exists
+            if (
+              newAccountsList.filter((a) => a.address === address).length === 0
+            ) {
+              newAccountsList.push(accountInfo);
+            }
+          }
+          setAccounts(newAccountsList);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }
+
   function addTransaction(timestamp: number, address: string) {
     let txs = transactions;
     // Limit to 10 transactions
@@ -134,6 +192,7 @@ export default function App() {
       provider={provider}
       walletAddress={walletAddress}
       addTransaction={addTransaction}
+      updateData={updateData}
     />
   );
   switch (menuSelection) {
@@ -145,6 +204,7 @@ export default function App() {
           addTransaction={addTransaction}
           tokens={tokens}
           getBooks={getBooks}
+          updateData={updateData}
         />
       );
       break;
@@ -156,6 +216,7 @@ export default function App() {
           addTransaction={addTransaction}
           tokens={tokens}
           getBooks={getBooks}
+          updateData={updateData}
         />
       );
       break;
@@ -167,6 +228,7 @@ export default function App() {
           addTransaction={addTransaction}
           tokens={tokens}
           getBooks={getBooks}
+          updateData={updateData}
         />
       );
       break;
@@ -177,7 +239,9 @@ export default function App() {
           walletAddress={walletAddress}
           addTransaction={addTransaction}
           tokens={tokens}
+          accounts={accounts}
           getBooks={getBooks}
+          updateData={updateData}
         />
       );
       break;

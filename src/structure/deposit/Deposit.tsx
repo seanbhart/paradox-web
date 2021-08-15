@@ -64,6 +64,7 @@ interface DepositProps {
   addTransaction: (timestamp: number, address: string) => void;
   tokens: TokenInfo[];
   getBooks: () => void;
+  updateData: () => void;
 }
 
 /*
@@ -75,25 +76,91 @@ const Deposit: React.FC<DepositProps> = ({
   addTransaction,
   tokens,
   getBooks,
+  updateData,
 }) => {
   const classes = useStyles();
-  const [tokenSelection, setTokenSelection] = useState("");
-  const [tokenQuantity, setTokenQuantity] = useState(0);
-  const [buttonLabel, setButtonLabel] = useState("Connect Wallet");
-  const [buttonDisabled, setButtonDisabled] = useState(true);
-  const [balanceString, setBalanceString] = useState("0");
+  const [tokenSelectionDeposit, setTokenSelectionDeposit] = useState("");
+  const [tokenSelectionWithdraw, setTokenSelectionWithdraw] = useState("");
+  const [tokenQuantityDeposit, setTokenQuantityDeposit] = useState(0);
+  const [tokenQuantityWithdraw, setTokenQuantityWithdraw] = useState(0);
+  const [buttonLabelDeposit, setButtonLabelDeposit] =
+    useState("Connect Wallet");
+  const [buttonLabelWithdraw, setButtonLabelWithdraw] =
+    useState("Connect Wallet");
+  const [buttonDisabledDeposit, setButtonDisabledDeposit] = useState(true);
+  const [buttonDisabledWithdraw, setButtonDisabledWithdraw] = useState(true);
+  const [balanceStringDeposit, setBalanceStringDeposit] = useState("0");
+  const [balanceStringWithdraw, setBalanceStringWithdraw] = useState("0");
 
-  if (walletAddress !== "" && buttonDisabled) {
-    setButtonLabel("Deposit");
-    setButtonDisabled(false);
+  if (walletAddress !== "" && buttonLabelDeposit === "Connect Wallet") {
+    setButtonLabelDeposit("Select Deposit");
+    updateData();
+  }
+  if (walletAddress !== "" && buttonLabelWithdraw === "Connect Wallet") {
+    setButtonLabelWithdraw("Select Withdrawal");
   }
 
-  async function newTokenSelected(symbol: string) {
-    setTokenSelection(symbol);
-    await getTokenBalance(symbol);
+  function newTokenSelectedDeposit(symbol: string) {
+    updateDeposit(symbol, tokenQuantityDeposit);
+  }
+  function newTokenQuantityDeposit(quantity: number) {
+    updateDeposit(tokenSelectionDeposit, quantity);
+  }
+  async function updateDeposit(symbol: string, quantity: number) {
+    setTokenSelectionDeposit(symbol);
+    setTokenQuantityDeposit(quantity);
+
+    if (quantity <= 0 || symbol === "") {
+      setButtonLabelDeposit("Invalid Quantity");
+      setButtonDisabledDeposit(true);
+      return;
+    }
+    const tokenBalance = await getTokenBalance(symbol);
+    // const bookBalance = await getBookBalance(symbol);
+    setBalanceStringDeposit(tokenBalance ? tokenBalance : "0");
+
+    // Only show the button when the amount is successfully calculated
+    // and the account has enough tokens to swap
+    if (Number(tokenBalance) >= quantity) {
+      setButtonLabelDeposit("Deposit");
+      setButtonDisabledDeposit(false);
+    } else {
+      setButtonLabelDeposit("Invalid Quantity");
+      setButtonDisabledDeposit(true);
+    }
   }
 
-  async function getBookBalance(tokenAddress: string) {
+  function newTokenSelectedWithdraw(symbol: string) {
+    updateWithdraw(symbol, tokenQuantityWithdraw);
+  }
+  function newTokenQuantityWithdraw(quantity: number) {
+    updateWithdraw(tokenSelectionWithdraw, quantity);
+  }
+  async function updateWithdraw(symbol: string, quantity: number) {
+    setTokenSelectionWithdraw(symbol);
+    setTokenQuantityWithdraw(quantity);
+
+    if (quantity <= 0 || symbol === "") {
+      setButtonLabelWithdraw("Invalid Quantity");
+      setButtonDisabledWithdraw(true);
+      return;
+    }
+    // const tokenBalance = await getTokenBalance(symbol);
+    const bookBalance = await getBookBalance(symbol);
+    setBalanceStringWithdraw(bookBalance ? bookBalance : "0");
+
+    // Only show the button when the amount is successfully calculated
+    // and the account has enough tokens to swap
+    if (Number(bookBalance) >= quantity) {
+      setButtonLabelWithdraw("Withdraw");
+      setButtonDisabledWithdraw(false);
+    } else {
+      setButtonLabelWithdraw("Invalid Quantity");
+      setButtonDisabledWithdraw(true);
+    }
+  }
+
+  async function getBookBalance(symbol: string) {
     if (!provider) {
       return;
     }
@@ -101,16 +168,18 @@ const Deposit: React.FC<DepositProps> = ({
     if (!signer) {
       return;
     }
+    const tokenAddress = await _getToken(symbol);
 
-    // // Get the acount balance from the token
-    // const signerAddress = await signer.getAddress();
-    // const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
-    // const book = await dox.getBook(signerAddress, tokenAddress);
-    // let res = ethers.utils.formatUnits(book, 18);
-    // res = (+res).toFixed(4);
-    // console.log("book: ", res, 18);
-
-    getBooks();
+    // Get the acount balance from the token
+    const signerAddress = await signer.getAddress();
+    const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
+    const book = await dox.getBook(signerAddress, tokenAddress);
+    const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
+    const decimals = await token.decimals();
+    let res = ethers.utils.formatUnits(book, decimals);
+    res = (+res).toFixed(4);
+    // console.log("book: ", res, decimals);
+    return res;
   }
 
   async function getTokenBalance(symbol: string) {
@@ -131,13 +200,11 @@ const Deposit: React.FC<DepositProps> = ({
     let res = ethers.utils.formatUnits(userBalance, decimals);
     res = (+res).toFixed(4);
     // console.log("balance: ", res, decimals);
-    setBalanceString(res);
-
-    await getBookBalance(tokenAddress);
+    return res;
   }
 
   async function deposit() {
-    await _deposit(tokenSelection, tokenQuantity);
+    await _deposit(tokenSelectionDeposit, tokenQuantityDeposit);
   }
 
   // The deposit amount set will be in token amounts with decimals
@@ -171,15 +238,67 @@ const Deposit: React.FC<DepositProps> = ({
       addTransaction(Date.now(), tx.hash);
       await tx.wait();
     } catch (error) {
+      console.log(error);
+      if (!error.data.message) {
+        return;
+      }
       error.data.message.includes("INVALID_TOKEN_ADDRESS")
         ? alert("That token address is not valid.")
         : error.data.message.includes("INVALID_DEPOSIT_AMOUNT")
         ? alert("That deposit amount is not valid.")
+        : error.data.message.includes("INSUFFICIENT_TOKEN_BALANCE")
+        ? alert("You do not have enough tokens for that deposit.")
         : alert("There was an error completing the deposit. Please try again.");
     }
 
     // Refresh the token balance
-    await getTokenBalance(symbol);
+    const tokenBalance = await getTokenBalance(symbol);
+    // const bookBalance = await getBookBalance(symbol);
+    setBalanceStringDeposit(tokenBalance ? tokenBalance : "0");
+    getBooks();
+  }
+
+  async function withdraw() {
+    await _withdraw(tokenSelectionWithdraw, tokenQuantityWithdraw);
+  }
+
+  async function _withdraw(symbol: string, amount: number) {
+    if (!provider) {
+      return;
+    }
+    const signer = provider.getSigner();
+    if (!signer) {
+      return;
+    }
+    const tokenAddress = await _getToken(symbol);
+    const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
+
+    const decimals = await token.decimals();
+    const bigAmt = ethers.utils.parseUnits(amount.toString(), decimals);
+    try {
+      const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
+      const tx = await dox.withdraw(tokenAddress, bigAmt);
+      addTransaction(Date.now(), tx.hash);
+      await tx.wait();
+    } catch (error) {
+      console.log(error);
+      if (!error.data.message) {
+        return;
+      }
+      error.data.message.includes("INVALID_TOKEN_ADDRESS")
+        ? alert("That token address is not valid.")
+        : error.data.message.includes("INVALID_WITHDRAW_AMOUNT")
+        ? alert("That withdrawal amount is not valid.")
+        : error.data.message.includes("INSUFFICIENT_BOOK_BALANCE")
+        ? alert("You do not have that many tokens to withdraw.")
+        : alert("There was an error completing the deposit. Please try again.");
+    }
+
+    // Refresh the book balance
+    // const tokenBalance = await getTokenBalance(symbol);
+    const bookBalance = await getBookBalance(symbol);
+    setBalanceStringWithdraw(bookBalance ? bookBalance : "0");
+    getBooks();
   }
 
   async function _getToken(symbol: string) {
@@ -209,14 +328,14 @@ const Deposit: React.FC<DepositProps> = ({
   // PAGE CONTENT
   const tokenDeposit = (
     <Paper id="deposit">
-      <div id="deposit-title">Paradox</div>
+      <div id="deposit-title">Paradox Deposit</div>
       <div id="token-menu">
         <div id="tokenmenu-label-top">Available L1 Balance</div>
         <TokenMenu
-          label={String(balanceString)}
+          label={String(balanceStringDeposit)}
           tokenFactoryAddress={tokenFactoryAddress}
-          tokenSelect={newTokenSelected}
-          tokenQuantity={setTokenQuantity}
+          tokenSelect={newTokenSelectedDeposit}
+          tokenQuantity={newTokenQuantityDeposit}
         />
         <div id="tokenmenu-label-bottom">L0 Deposit Amount</div>
       </div>
@@ -225,9 +344,34 @@ const Deposit: React.FC<DepositProps> = ({
         id="deposit-button"
         variant="contained"
         color="primary"
-        disabled={buttonDisabled}
+        disabled={buttonDisabledDeposit}
       >
-        {buttonLabel}
+        {buttonLabelDeposit}
+      </Button>
+    </Paper>
+  );
+
+  const tokenWithdraw = (
+    <Paper id="withdraw">
+      <div id="withdraw-title">Paradox Withdraw</div>
+      <div id="token-menu">
+        <div id="tokenmenu-label-top">Available L0 Balance</div>
+        <TokenMenu
+          label={String(balanceStringWithdraw)}
+          tokenFactoryAddress={tokenFactoryAddress}
+          tokenSelect={newTokenSelectedWithdraw}
+          tokenQuantity={newTokenQuantityWithdraw}
+        />
+        <div id="tokenmenu-label-bottom">L1 Withdraw Amount</div>
+      </div>
+      <Button
+        onClick={withdraw}
+        id="withdraw-button"
+        variant="contained"
+        color="primary"
+        disabled={buttonDisabledWithdraw}
+      >
+        {buttonLabelWithdraw}
       </Button>
     </Paper>
   );
@@ -242,6 +386,7 @@ const Deposit: React.FC<DepositProps> = ({
           Layer 0.
         </Paper>
         {tokenDeposit}
+        {tokenWithdraw}
         <TableContainer component={Paper}>
           <Table className={classes.table} aria-label="simple table">
             <TableHead>

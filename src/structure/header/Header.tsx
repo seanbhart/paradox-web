@@ -12,6 +12,8 @@ import { ethers } from "ethers";
 import { colors } from "../../common/Formatting";
 import "./Header.css";
 
+// import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
@@ -72,6 +74,7 @@ const Header: React.FC<MenuProps> = ({
       const provider = new ethers.providers.Web3Provider(
         (window as any).ethereum
       );
+      // await provider.send("eth_requestAccounts", []);
       setProvdr(provider);
       const network = await provider.getNetwork();
       setNetworkName(network.name);

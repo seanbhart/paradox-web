@@ -17,7 +17,7 @@ import ReplayIcon from "@material-ui/icons/Replay";
 import Moment from "react-moment";
 
 import "./Transactions.css";
-import { TransactionInfo, etherscanBaseUrl } from "../../App";
+import { TransactionInfo, etherscanTxUrl } from "../../App";
 
 // const nf = Intl.NumberFormat();
 
@@ -103,7 +103,7 @@ const Transactions: React.FC<TransactionsProps> = ({
                     <a
                       target="_blank"
                       rel="noreferrer"
-                      href={etherscanBaseUrl + transaction.address}
+                      href={etherscanTxUrl + transaction.address}
                     >
                       <OpenInNewIcon className="tx-link-icon" />
                     </a>

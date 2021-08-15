@@ -16,7 +16,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
 import "./Transfer.css";
-import { tokenFactoryAddress, doxAddress } from "../../App";
+import { tokenFactoryAddress, doxAddress, AccountInfo } from "../../App";
 import { TokenInfo } from "../tokens/Tokens";
 import AccountMenu from "./AccountMenu";
 import TokenMenu from "../tokens/TokenMenu";
@@ -50,21 +50,32 @@ const StyledTableRow = withStyles((theme: Theme) =>
 )(TableRow);
 
 const useStyles = makeStyles({
-  table: {
+  bookTable: {
     minWidth: 300,
     maxWidth: 300,
+  },
+  accountsTable: {
+    minWidth: 300,
+    maxWidth: 300,
+  },
+  accountsAddressCell: {
+    fontSize: 10,
+    overflow: "hidden",
+    maxWidth: 100,
   },
 });
 
 /*
-CLASSES
+INTERFACES
 */
 interface TransferProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
   addTransaction: (timestamp: number, address: string) => void;
   tokens: TokenInfo[];
+  accounts: AccountInfo[];
   getBooks: () => void;
+  updateData: () => void;
 }
 
 /*
@@ -75,28 +86,64 @@ const Transfer: React.FC<TransferProps> = ({
   walletAddress,
   addTransaction,
   tokens,
+  accounts,
   getBooks,
+  updateData,
 }) => {
   const classes = useStyles();
   const [accountSelection, setAccountSelection] = useState("");
   const [tokenSelection, setTokenSelection] = useState("");
   const [tokenQuantity, setTokenQuantity] = useState(0);
+  const [tokenAvailable, setTokenAvailable] = useState(0);
   const [buttonLabel, setButtonLabel] = useState("Connect Wallet");
   const [buttonDisabled, setButtonDisabled] = useState(true);
   const [balanceString, setBalanceString] = useState("0");
 
-  if (walletAddress !== "" && buttonDisabled) {
-    setButtonLabel("Transfer");
-    setButtonDisabled(false);
+  if (walletAddress !== "" && buttonLabel === "Connect Wallet") {
+    setButtonLabel("Choose Transfer");
+    setButtonDisabled(true);
+    updateData();
   }
 
   async function newAccountSelected(address: string) {
     setAccountSelection(address);
+    if (tokenSelection !== "" && tokenQuantity > 0) {
+      setButtonLabel("Transfer");
+      setButtonDisabled(false);
+    } else {
+      setButtonLabel("Choose Transfer");
+      setButtonDisabled(true);
+    }
   }
 
   async function newTokenSelected(symbol: string) {
     setTokenSelection(symbol);
     await getBookBalance(symbol);
+    if (accountSelection !== "" && tokenQuantity > 0) {
+      setButtonLabel("Transfer");
+      setButtonDisabled(false);
+    } else {
+      setButtonLabel("Choose Transfer");
+      setButtonDisabled(true);
+    }
+  }
+
+  async function newTokenQuantity(quantity: number) {
+    setTokenQuantity(quantity);
+    if (
+      tokenSelection !== "" &&
+      accountSelection !== "" &&
+      tokenAvailable >= quantity
+    ) {
+      setButtonLabel("Transfer");
+      setButtonDisabled(false);
+    } else if (tokenAvailable < quantity) {
+      setButtonLabel("Invalid Quantity");
+      setButtonDisabled(true);
+    } else {
+      setButtonLabel("Choose Transfer");
+      setButtonDisabled(true);
+    }
   }
 
   async function getBookBalance(symbol: string) {
@@ -115,8 +162,9 @@ const Transfer: React.FC<TransferProps> = ({
     const book = await dox.getBook(signerAddress, tokenAddress);
     let res = ethers.utils.formatUnits(book, 18);
     res = (+res).toFixed(4);
-    console.log("book: ", res, 18);
+    // console.log("book: ", res, 18);
     setBalanceString(res);
+    setTokenAvailable(Number(res));
 
     getBooks();
   }
@@ -145,21 +193,15 @@ const Transfer: React.FC<TransferProps> = ({
     const decimals = await token.decimals();
     const bigAmt = ethers.utils.parseUnits(amount.toString(), decimals);
     try {
-      var tx = await token.approve(accountAddress, bigAmt);
+      const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
+      const tx = await dox.transfer(tokenAddress, accountAddress, bigAmt);
       addTransaction(Date.now(), tx.hash);
       await tx.wait();
     } catch (error) {
       console.log(error);
-      alert(
-        "There was an error approving the tokens for transfer. Please try again."
-      );
-    }
-    try {
-      const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
-      tx = await dox.transfer(tokenAddress, accountAddress, bigAmt);
-      addTransaction(Date.now(), tx.hash);
-      await tx.wait();
-    } catch (error) {
+      if (!error.data.message) {
+        return;
+      }
       error.data.message.includes("INVALID_TOKEN_ADDRESS")
         ? alert("That token address is not valid.")
         : error.data.message.includes("INVALID_ACCOUNT_ADDRESS")
@@ -207,6 +249,7 @@ const Transfer: React.FC<TransferProps> = ({
         <div className="transfermenu-label-top-left">Destination Address</div>
         <AccountMenu
           label={String(balanceString)}
+          accounts={accounts}
           accountSelect={newAccountSelected}
         />
         <div>
@@ -217,7 +260,7 @@ const Transfer: React.FC<TransferProps> = ({
           label={String(balanceString)}
           tokenFactoryAddress={tokenFactoryAddress}
           tokenSelect={newTokenSelected}
-          tokenQuantity={setTokenQuantity}
+          tokenQuantity={newTokenQuantity}
         />
         <div className="transfermenu-label-bottom">L0 Transfer Amount</div>
       </div>
@@ -233,6 +276,77 @@ const Transfer: React.FC<TransferProps> = ({
     </Paper>
   );
 
+  const bookTable = (
+    <div className="transfer-table">
+      <TableContainer component={Paper}>
+        <Table className={classes.bookTable} aria-label="simple table">
+          <TableHead>
+            <TableRow>
+              <StyledTableCell>Symbol</StyledTableCell>
+              <StyledTableCell align="left">Token Name</StyledTableCell>
+              <StyledTableCell align="right">Your L0 Balance</StyledTableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {tokens.map((token) => (
+              <StyledTableRow key={token.symbol}>
+                <StyledTableCell component="th" scope="row">
+                  {token.symbol}
+                </StyledTableCell>
+                <StyledTableCell align="left">{token.name}</StyledTableCell>
+                <StyledTableCell align="right">
+                  {Number(
+                    ethers.utils.formatUnits(token.userBalance, token.decimals)
+                  ).toFixed(4)}
+                </StyledTableCell>
+              </StyledTableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </div>
+  );
+
+  const accountsTable = (
+    <div className="transfer-table">
+      <TableContainer component={Paper}>
+        <Table className={classes.accountsTable} aria-label="simple table">
+          <TableHead>
+            <TableRow>
+              <StyledTableCell>Paradox Member Accounts</StyledTableCell>
+              {/* <StyledTableCell align="left">Address</StyledTableCell> */}
+              {/* <StyledTableCell align="right">L0 Balance</StyledTableCell> */}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {accounts.map((account) => (
+              <StyledTableRow key={account.address}>
+                <StyledTableCell
+                  component="th"
+                  scope="row"
+                  className={classes.accountsAddressCell}
+                >
+                  {account.address}
+                </StyledTableCell>
+                {/* <StyledTableCell
+                  align="right"
+                  className={classes.accountsAddressCell}
+                >
+                  {account.address}
+                </StyledTableCell> */}
+                {/* <StyledTableCell align="right">
+                {Number(
+                  ethers.utils.formatUnits(token.userBalance, token.decimals)
+                ).toFixed(4)}
+              </StyledTableCell> */}
+              </StyledTableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </div>
+  );
+
   return (
     <div>
       <header className="App-header">
@@ -242,35 +356,8 @@ const Transfer: React.FC<TransferProps> = ({
           Layer 0 before L0 to L0 transfer.
         </Paper>
         {tokenTransfer}
-        <TableContainer component={Paper}>
-          <Table className={classes.table} aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <StyledTableCell>Symbol</StyledTableCell>
-                <StyledTableCell align="left">Token Name</StyledTableCell>
-                <StyledTableCell align="right">Your L0 Balance</StyledTableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {tokens.map((token) => (
-                <StyledTableRow key={token.symbol}>
-                  <StyledTableCell component="th" scope="row">
-                    {token.symbol}
-                  </StyledTableCell>
-                  <StyledTableCell align="left">{token.name}</StyledTableCell>
-                  <StyledTableCell align="right">
-                    {Number(
-                      ethers.utils.formatUnits(
-                        token.userBalance,
-                        token.decimals
-                      )
-                    ).toFixed(4)}
-                  </StyledTableCell>
-                </StyledTableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {bookTable}
+        {accountsTable}
       </header>
     </div>
   );

@@ -19,9 +19,10 @@ import InvertColorsIcon from "@material-ui/icons/InvertColors";
 import InvertColorsOffIcon from "@material-ui/icons/InvertColorsOff";
 
 import "./Tokens.css";
-import { etherscanBaseUrl, tokenFactoryAddress } from "../../App";
+import { etherscanTokenUrl, tokenFactoryAddress } from "../../App";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
 import DOXERC20Factory from "../../contracts/DOXERC20Factory.sol/DOXERC20Factory.json";
+// import ParadoxV1 from "../../contracts/ParadoxV1.sol/ParadoxV1.json";
 
 // const nf = Intl.NumberFormat();
 
@@ -64,6 +65,7 @@ interface TokenProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
   addTransaction: (timestamp: number, address: string) => void;
+  updateData: () => void;
 }
 
 /*
@@ -87,6 +89,7 @@ const Tokens: React.FC<TokenProps> = ({
   provider,
   walletAddress,
   addTransaction,
+  updateData,
 }) => {
   const classes = useStyles();
   const [tokenName, setTokenName] = useState("Paradox");
@@ -98,6 +101,12 @@ const Tokens: React.FC<TokenProps> = ({
   const [tokensCalled, setTokensCalled] = useState(false);
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
   // tokens.push(new TokenInfo("test", "TST", 18, ethers.BigNumber.from(100)));
+
+  // DO ON LOAD
+  if (!tokensCalled && walletAddress !== "") {
+    getTokens();
+    updateData();
+  }
 
   /*
   FUNCTIONS
@@ -137,6 +146,10 @@ const Tokens: React.FC<TokenProps> = ({
           // Reset the token list
           await getTokens();
         } catch (error) {
+          console.log(error);
+          if (!error.data.message) {
+            return;
+          }
           error.data.message.includes("TOKEN_EXISTS")
             ? alert("That token already exists.")
             : alert(
@@ -184,6 +197,12 @@ const Tokens: React.FC<TokenProps> = ({
       if (!tokenFactory) {
         return;
       }
+
+      // const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
+      // console.log("dox: ", dox);
+      // const accountListLength: string = await dox.accountListLength();
+      // console.log("accountListLength: ", accountListLength);
+
       // TODO: tokenFactory.tokenListLength() called twice? Function not available?
       const tokenListLength: number = await tokenFactory.tokenListLength();
       if (tokenListLength <= 0) {
@@ -234,16 +253,6 @@ const Tokens: React.FC<TokenProps> = ({
     addTransaction(Date.now(), tx.hash);
     await tx.wait();
     await getTokens();
-  }
-
-  // DO ON LOAD
-  if (!tokensCalled && walletAddress) {
-    getTokens();
-
-    // addTransaction(
-    //   Date.now(),
-    //   "0xeb36bdc46e4a737847d549b231bd1f2a148c0bb854b94463ebb010adadd38352"
-    // );
   }
 
   // PAGE CONTENT
@@ -310,7 +319,7 @@ const Tokens: React.FC<TokenProps> = ({
                 <a
                   target="_blank"
                   rel="noreferrer"
-                  href={etherscanBaseUrl + token.address}
+                  href={etherscanTokenUrl + token.address}
                 >
                   <OpenInNewIcon className="token-link-icon" />
                 </a>

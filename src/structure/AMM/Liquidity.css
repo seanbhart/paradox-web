@@ -35,9 +35,18 @@
   text-align: left;
 }
 
-#tokenliquidity-label-top {
+.tokenliquidity-label-top {
   width: 280px;
   height: 10px;
+  line-height: 10px;
+  font-size: 10px;
+  font-family: "Ubuntu";
+  text-align: right;
+}
+
+.tokenliquidity-label-info {
+  width: 280px;
+  height: 14px;
   line-height: 10px;
   font-size: 10px;
   font-family: "Ubuntu";

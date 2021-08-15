@@ -73,16 +73,10 @@ const TokenMenu: React.FC<TokenMenuProps> = ({
     // console.log(quantity);
   };
 
-  // request access to the user's MetaMask account
-  async function requestAccount() {
-    await (window as any).ethereum.request({ method: "eth_requestAccounts" });
-  }
-
   async function tokenBalance(
     tAddress: string
   ): Promise<[ethers.BigNumber, number]> {
     if (typeof (window as any).ethereum !== "undefined" && tAddress !== "") {
-      await requestAccount();
       const provider = new ethers.providers.Web3Provider(
         (window as any).ethereum
       );
@@ -100,7 +94,6 @@ const TokenMenu: React.FC<TokenMenuProps> = ({
   async function tokenList() {
     if (typeof (window as any).ethereum !== "undefined") {
       setTokensCalled(true);
-      await requestAccount();
       const provider = new ethers.providers.Web3Provider(
         (window as any).ethereum
       );

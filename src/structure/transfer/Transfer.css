@@ -67,3 +67,8 @@
   font-family: "Ubuntu";
   text-align: right;
 }
+
+.transfer-table {
+  /* margin-top: 20px; */
+  margin-bottom: 20px;
+}
