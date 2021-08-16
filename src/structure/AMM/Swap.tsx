@@ -16,7 +16,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
 import "./Swap.css";
-import { tokenFactoryAddress, doxAddress } from "../../App";
+import { tokenFactoryAddress, doxAddress } from "../../setup";
 import { TokenInfo } from "../tokens/Tokens";
 import TokenMenu from "../tokens/TokenMenu";
 import TokenMenuSolo from "../tokens/TokenMenuSolo";
@@ -62,7 +62,11 @@ CLASSES
 interface SwapProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
-  addTransaction: (timestamp: number, address: string) => void;
+  addTransaction: (
+    timestamp: number,
+    address: string,
+    pending: boolean
+  ) => void;
   tokens: TokenInfo[];
   getBooks: () => void;
   updateData: () => void;
@@ -180,7 +184,7 @@ const Swap: React.FC<SwapProps> = ({
       setToken2Quantity(outputNum);
       setPriceOutput(outputNum / quantity);
 
-      var userBal = 0;
+      let userBal = 0;
       // Find the input token for the current account to check available quantity.
       tokens.every((token) => {
         if (token.address === token1Address) {
@@ -258,8 +262,9 @@ const Swap: React.FC<SwapProps> = ({
     const bigAmt1 = ethers.utils.parseUnits(t1Quantity.toString(), t1Decimals);
     try {
       const tx = await dox.swap(t1Address, t2Address, bigAmt1);
-      addTransaction(Date.now(), tx.hash);
+      addTransaction(Date.now(), tx.hash, true);
       await tx.wait();
+      addTransaction(Date.now(), tx.hash, false);
       // const [cpi, order] = await dox.findCPI(t1Address, t2Address);
       // console.log(
       //   "cpi: ",

@@ -16,7 +16,8 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
 import "./Transfer.css";
-import { tokenFactoryAddress, doxAddress, AccountInfo } from "../../App";
+import { AccountInfo } from "../../App";
+import { tokenFactoryAddress, doxAddress } from "../../setup";
 import { TokenInfo } from "../tokens/Tokens";
 import AccountMenu from "./AccountMenu";
 import TokenMenu from "../tokens/TokenMenu";
@@ -71,7 +72,11 @@ INTERFACES
 interface TransferProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
-  addTransaction: (timestamp: number, address: string) => void;
+  addTransaction: (
+    timestamp: number,
+    address: string,
+    pending: boolean
+  ) => void;
   tokens: TokenInfo[];
   accounts: AccountInfo[];
   getBooks: () => void;
@@ -195,8 +200,9 @@ const Transfer: React.FC<TransferProps> = ({
     try {
       const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
       const tx = await dox.transfer(tokenAddress, accountAddress, bigAmt);
-      addTransaction(Date.now(), tx.hash);
+      addTransaction(Date.now(), tx.hash, true);
       await tx.wait();
+      addTransaction(Date.now(), tx.hash, false);
     } catch (error) {
       console.log(error);
       if (!error.data.message) {

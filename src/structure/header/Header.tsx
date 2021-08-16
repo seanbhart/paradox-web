@@ -26,7 +26,8 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
       fontSize: 20,
       fontFamily: "Ubuntu",
-      marginLeft: 240,
+      width: "100%",
+      textAlign: "left",
     },
   })
 );
@@ -81,11 +82,12 @@ const Header: React.FC<MenuProps> = ({
       const signer = provider.getSigner();
       const address = await signer.getAddress();
       setWalletAddr(address);
-      setWalletText(address.slice(0, 20));
+      // setWalletText(address.slice(0, 20));
+      setWalletText(address);
     }
   }
 
-  var menuHeader = (
+  let menuHeader = (
     <Typography variant="h6" className={classes.title}>
       L1: Tokens
     </Typography>

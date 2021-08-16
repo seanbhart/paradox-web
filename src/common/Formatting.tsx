@@ -48,8 +48,8 @@ export const formatTimestamp = (timestamp: number) => {
 };
 
 export const datetimeString = (timestamp: number) => {
-  var a = new Date(timestamp);
-  var months = [
+  let a = new Date(timestamp);
+  let months = [
     "Jan",
     "Feb",
     "Mar",
@@ -63,12 +63,12 @@ export const datetimeString = (timestamp: number) => {
     "Nov",
     "Dec",
   ];
-  var year = a.getFullYear();
-  var month = months[a.getMonth()];
-  var date = a.getDate();
-  var hour = a.getHours();
-  var min = a.getMinutes();
-  // var sec = a.getSeconds();
+  let year = a.getFullYear();
+  let month = months[a.getMonth()];
+  let date = a.getDate();
+  let hour = a.getHours();
+  let min = a.getMinutes();
+  // let sec = a.getSeconds();
   return month
     ? month.toUpperCase() +
         " " +
@@ -83,8 +83,8 @@ export const datetimeString = (timestamp: number) => {
 };
 
 export const dateStringUTC = (timestamp: number) => {
-  var a = new Date(timestamp);
-  var months = [
+  let a = new Date(timestamp);
+  let months = [
     "Jan",
     "Feb",
     "Mar",
@@ -98,9 +98,9 @@ export const dateStringUTC = (timestamp: number) => {
     "Nov",
     "Dec",
   ];
-  var year = a.getUTCFullYear();
-  var month = months[a.getUTCMonth()];
-  var date = a.getUTCDate();
+  let year = a.getUTCFullYear();
+  let month = months[a.getUTCMonth()];
+  let date = a.getUTCDate();
   return month ? month.toUpperCase() + " " + date + " " + year : "";
 };
 
@@ -117,7 +117,7 @@ export const resizeBase64Img = (
   newHeight: number
 ) => {
   return new Promise((resolve, reject) => {
-    var canvas = document.createElement("canvas");
+    let canvas = document.createElement("canvas");
     canvas.style.width = newWidth.toString() + "px";
     canvas.style.height = newHeight.toString() + "px";
     let context: CanvasRenderingContext2D | null = canvas.getContext("2d");

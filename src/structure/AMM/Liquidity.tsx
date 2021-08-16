@@ -16,7 +16,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
 import "./Liquidity.css";
-import { tokenFactoryAddress, doxAddress } from "../../App";
+import { tokenFactoryAddress, doxAddress } from "../../setup";
 import { TokenInfo } from "../tokens/Tokens";
 import TokenMenu from "../tokens/TokenMenu";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
@@ -61,7 +61,11 @@ INTERFACES
 interface LiquidityProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
-  addTransaction: (timestamp: number, address: string) => void;
+  addTransaction: (
+    timestamp: number,
+    address: string,
+    pending: boolean
+  ) => void;
   tokens: TokenInfo[];
   getBooks: () => void;
   updateData: () => void;
@@ -111,7 +115,7 @@ const Liquidity: React.FC<LiquidityProps> = ({
   }
 
   async function tokenSelection(selection: string, isToken1: boolean) {
-    var exists: boolean | undefined = false;
+    let exists: boolean | undefined = false;
     if (isToken1) {
       setToken1Selection(selection);
       exists = await _findPair(selection, token2Selection);
@@ -217,8 +221,9 @@ const Liquidity: React.FC<LiquidityProps> = ({
     const bigAmt2 = ethers.utils.parseUnits(t2Quantity.toString(), t2Decimals);
     try {
       const tx = await dox.addLiquidity(t1Address, t2Address, bigAmt1, bigAmt2);
-      addTransaction(Date.now(), tx.hash);
+      addTransaction(Date.now(), tx.hash, true);
       await tx.wait();
+      addTransaction(Date.now(), tx.hash, false);
       // const [cpi, order] = await dox.findCPI(t1Address, t2Address);
       // console.log(
       //   "cpi: ",

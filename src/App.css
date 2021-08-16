@@ -38,6 +38,11 @@
   margin-top: 30px;
 }
 
+#app-hdr {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+
 .App-link {
   color: #61dafb;
 }

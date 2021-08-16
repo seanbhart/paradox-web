@@ -7,12 +7,13 @@
   font-size: 12px;
   font-family: "Ubuntu";
   overflow: hidden;
-  padding-left: 10px;
+  text-overflow: ellipsis;
+  padding-left: 15px;
   padding-right: 10px;
 }
 
 #network-name {
-  width: 100px;
+  width: 150px;
   height: 40px;
   line-height: 40px;
   font-size: 20px;

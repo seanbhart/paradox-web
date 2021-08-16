@@ -15,9 +15,11 @@ import Paper from "@material-ui/core/Paper";
 import OpenInNewIcon from "@material-ui/icons/OpenInNew";
 import ReplayIcon from "@material-ui/icons/Replay";
 import Moment from "react-moment";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 import "./Transactions.css";
-import { TransactionInfo, etherscanTxUrl } from "../../App";
+import { TransactionInfo } from "../../App";
+import { etherscanTxUrl } from "../../setup";
 
 // const nf = Intl.NumberFormat();
 
@@ -94,7 +96,11 @@ const Transactions: React.FC<TransactionsProps> = ({
               {transactions.map((transaction) => (
                 <StyledTableRow key={transaction.address}>
                   <StyledTableCell component="th" scope="row">
-                    <Moment format="h:mm A" date={transaction.timestamp} />
+                    {transaction.pending ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <Moment format="h:mm A" date={transaction.timestamp} />
+                    )}
                   </StyledTableCell>
                   <StyledTableCell align="right" className="address-cell">
                     {transaction.address}

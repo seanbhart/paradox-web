@@ -107,7 +107,7 @@ const TokenMenuSolo: React.FC<TokenMenuSoloProps> = ({
         if (tokenFactory) {
           const tokenListLength: number = await tokenFactory.tokenListLength();
           if (tokenListLength > 0) {
-            for (var i = 0; i < tokenListLength; i++) {
+            for (let i = 0; i < tokenListLength; i++) {
               const tokenSymbol: string = await tokenFactory.tokenList(i);
               const tokenAddress: string = await tokenFactory.getToken(
                 tokenSymbol

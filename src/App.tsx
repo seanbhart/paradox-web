@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 // import withFirebaseAuth from 'react-with-firebase-auth'
 // import { useAuthState } from 'react-firebase-hooks/auth';
-// import { db, firebaseAppAuth, functions, storage } from "./firebase";
+// import { db, firebaseAppAuth, functions, storage } from "./setup";
+// import { etherscanTxUrl, etherscanTokenUrl } from "./setup";
+import { doxAddress } from "./setup";
 import { ethers } from "ethers";
 
 import Deposit from "./structure/deposit/Deposit";
@@ -17,17 +19,15 @@ import "./App.css";
 import DOXERC20 from "./contracts/DOXERC20.sol/DOXERC20.json";
 import ParadoxV1 from "./contracts/ParadoxV1.sol/ParadoxV1.json";
 
-export const etherscanTxUrl: string = "https://kovan.etherscan.io/tx/";
-export const etherscanTokenUrl: string = "https://kovan.etherscan.io/token/";
-export const tokenFactoryAddress: string =
-  "0xa6AB32d541e8368caDe2f71038f3334AafBb75DA";
-export const doxAddress: string = "0x59cfc18BCF6960870c73505b5b454BF174E7Bc4B";
-
 /*
 CLASSES
 */
 export class TransactionInfo {
-  constructor(public timestamp: number, public address: string) {}
+  constructor(
+    public timestamp: number,
+    public address: string,
+    public pending: boolean
+  ) {}
 }
 export class AccountInfo {
   constructor(
@@ -105,8 +105,8 @@ export default function App() {
     try {
       // Get the list of tokens owned on L0 by this account
       const tokenListLength = await dox.getBookListLength(signerAddress);
-      var newTokensList = [];
-      for (var i = 0; i < Number(tokenListLength); i++) {
+      let newTokensList = [];
+      for (let i = 0; i < Number(tokenListLength); i++) {
         const tokenAddress = await dox.getBookList(signerAddress, i);
         const book = await dox.getBook(signerAddress, tokenAddress);
         const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
@@ -149,10 +149,10 @@ export default function App() {
       const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
 
       try {
-        var newAccountsList = [];
+        let newAccountsList = [];
         const accountListLength: number = await dox.accountListLength();
         if (accountListLength > 0) {
-          for (var i = 0; i < accountListLength; i++) {
+          for (let i = 0; i < accountListLength; i++) {
             const address: string = await dox.getAccount(i);
             const accountInfo = new AccountInfo(address);
             // setAccounts((accounts) => [...accounts, accountInfo]);
@@ -172,13 +172,24 @@ export default function App() {
     }
   }
 
-  function addTransaction(timestamp: number, address: string) {
+  function addTransaction(
+    timestamp: number,
+    address: string,
+    pending: boolean
+  ) {
     let txs = transactions;
     // Limit to 10 transactions
     if (transactions.length > 10) {
       txs.shift();
     }
-    txs.push(new TransactionInfo(timestamp, address));
+    // If the transaction is pending, it is new, so add it directly.
+    // If the transaction is not pending, ensure any existing identical
+    // transaction is removed before adding the non-pending version.
+    if (!pending) {
+      const nonPendingTxs = txs.filter((tx) => !tx.pending);
+      txs = nonPendingTxs;
+    }
+    txs.push(new TransactionInfo(timestamp, address, pending));
     setTransactions([]);
     setTransactions(txs);
   }
@@ -187,7 +198,7 @@ export default function App() {
     setTransactions([]);
   }
 
-  var content = (
+  let content = (
     <Tokens
       provider={provider}
       walletAddress={walletAddress}
@@ -261,7 +272,7 @@ export default function App() {
         setWalletAddr={setWalletAddress}
         setProvdr={setProvider}
       />
-      <header className="App-header">
+      <header className="App-header" id="app-hdr">
         {content}
         <Transactions
           transactions={transactions}

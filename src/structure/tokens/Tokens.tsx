@@ -19,7 +19,7 @@ import InvertColorsIcon from "@material-ui/icons/InvertColors";
 import InvertColorsOffIcon from "@material-ui/icons/InvertColorsOff";
 
 import "./Tokens.css";
-import { etherscanTokenUrl, tokenFactoryAddress } from "../../App";
+import { tokenFactoryAddress, etherscanTokenUrl } from "../../setup";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
 import DOXERC20Factory from "../../contracts/DOXERC20Factory.sol/DOXERC20Factory.json";
 // import ParadoxV1 from "../../contracts/ParadoxV1.sol/ParadoxV1.json";
@@ -64,7 +64,11 @@ INTERFACES
 interface TokenProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
-  addTransaction: (timestamp: number, address: string) => void;
+  addTransaction: (
+    timestamp: number,
+    address: string,
+    pending: boolean
+  ) => void;
   updateData: () => void;
 }
 
@@ -139,8 +143,9 @@ const Tokens: React.FC<TokenProps> = ({
             tokenSymbol,
             ethers.utils.parseUnits(tokenOwnerBalance.toString(), 18)
           );
-          addTransaction(Date.now(), tx.hash);
+          addTransaction(Date.now(), tx.hash, true);
           await tx.wait();
+          addTransaction(Date.now(), tx.hash, false);
           // setTokenAddress(await tokenFactory.getToken(tokenSymbol));
 
           // Reset the token list
@@ -208,8 +213,8 @@ const Tokens: React.FC<TokenProps> = ({
       if (tokenListLength <= 0) {
         return;
       }
-      var newTokensList = [];
-      for (var i = 0; i < Number(tokenListLength); i++) {
+      let newTokensList = [];
+      for (let i = 0; i < Number(tokenListLength); i++) {
         const tokenSymbol: string = await tokenFactory.tokenList(i);
         const tokenAddress: string = await tokenFactory.getToken(tokenSymbol);
 
@@ -250,8 +255,9 @@ const Tokens: React.FC<TokenProps> = ({
     }
     const token = new ethers.Contract(tokenAddress, DOXERC20.abi, signer);
     const tx = await token.faucet();
-    addTransaction(Date.now(), tx.hash);
+    addTransaction(Date.now(), tx.hash, true);
     await tx.wait();
+    addTransaction(Date.now(), tx.hash, false);
     await getTokens();
   }
 

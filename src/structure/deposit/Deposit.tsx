@@ -16,7 +16,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 
 import "./Deposit.css";
-import { tokenFactoryAddress, doxAddress } from "../../App";
+import { tokenFactoryAddress, doxAddress } from "../../setup";
 import { TokenInfo } from "../tokens/Tokens";
 import TokenMenu from "../tokens/TokenMenu";
 import DOXERC20 from "../../contracts/DOXERC20.sol/DOXERC20.json";
@@ -61,7 +61,11 @@ CLASSES
 interface DepositProps {
   provider: ethers.providers.Web3Provider | undefined;
   walletAddress: string;
-  addTransaction: (timestamp: number, address: string) => void;
+  addTransaction: (
+    timestamp: number,
+    address: string,
+    pending: boolean
+  ) => void;
   tokens: TokenInfo[];
   getBooks: () => void;
   updateData: () => void;
@@ -223,9 +227,10 @@ const Deposit: React.FC<DepositProps> = ({
     const decimals = await token.decimals();
     const bigAmt = ethers.utils.parseUnits(amount.toString(), decimals);
     try {
-      var tx = await token.approve(doxAddress, bigAmt);
-      addTransaction(Date.now(), tx.hash);
+      let tx = await token.approve(doxAddress, bigAmt);
+      addTransaction(Date.now(), tx.hash, true);
       await tx.wait();
+      addTransaction(Date.now(), tx.hash, false);
     } catch (error) {
       console.log(error);
       alert(
@@ -234,9 +239,10 @@ const Deposit: React.FC<DepositProps> = ({
     }
     try {
       const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
-      tx = await dox.deposit(tokenAddress, bigAmt);
-      addTransaction(Date.now(), tx.hash);
+      let tx = await dox.deposit(tokenAddress, bigAmt);
+      addTransaction(Date.now(), tx.hash, true);
       await tx.wait();
+      addTransaction(Date.now(), tx.hash, false);
     } catch (error) {
       console.log(error);
       if (!error.data.message) {
@@ -278,8 +284,9 @@ const Deposit: React.FC<DepositProps> = ({
     try {
       const dox = new ethers.Contract(doxAddress, ParadoxV1.abi, signer);
       const tx = await dox.withdraw(tokenAddress, bigAmt);
-      addTransaction(Date.now(), tx.hash);
+      addTransaction(Date.now(), tx.hash, true);
       await tx.wait();
+      addTransaction(Date.now(), tx.hash, false);
     } catch (error) {
       console.log(error);
       if (!error.data.message) {
